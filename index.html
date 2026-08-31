@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>보조금 부정수급 조사 데스크</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700;900&family=Noto+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+:root{
+  --bg:#F2F4F3; --surface:#FFFFFF; --surface2:#EAEEEC;
+  --ink:#17262B; --muted:#5C6B6E; --line:#D8DEDC;
+  --accent:#0E6E5C; --accent-ink:#0A5546; --accent-soft:#DDEBE6;
+  --crit:#BE3E2B; --crit-soft:#F6E3DE; --warn:#B4740F; --warn-soft:#F5EAD5;
+  --good:#2F7D4F; --good-soft:#DFEEE4;
+  --serif:"Noto Serif KR",serif; --sans:"Noto Sans KR","Apple SD Gothic Neo",sans-serif;
+  --mono:"IBM Plex Mono","Courier New",monospace;
+}
+:root:not([data-theme="light"]){}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#101917; --surface:#18231F; --surface2:#1F2C27;
+    --ink:#E8EDEA; --muted:#9AA8A3; --line:#2A3833;
+    --accent:#4FBFA4; --accent-ink:#7ED4BF; --accent-soft:#1C3A32;
+    --crit:#E06B54; --crit-soft:#3A211B; --warn:#D99A45; --warn-soft:#382C17;
+    --good:#6FBE8C; --good-soft:#1D3527;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#101917; --surface:#18231F; --surface2:#1F2C27;
+  --ink:#E8EDEA; --muted:#9AA8A3; --line:#2A3833;
+  --accent:#4FBFA4; --accent-ink:#7ED4BF; --accent-soft:#1C3A32;
+  --crit:#E06B54; --crit-soft:#3A211B; --warn:#D99A45; --warn-soft:#382C17;
+  --good:#6FBE8C; --good-soft:#1D3527;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.65}
+a{color:var(--accent-ink)}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+header.site{border-bottom:2px solid var(--ink);background:var(--surface)}
+.masthead{display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding:26px 0 14px;flex-wrap:wrap}
+.masthead h1{font-family:var(--serif);font-weight:900;font-size:clamp(22px,3.4vw,32px);margin:0;letter-spacing:-.02em;text-wrap:balance}
+.masthead .tag{font-family:var(--mono);font-size:12px;color:var(--accent-ink);border:1px solid var(--accent);padding:3px 10px;border-radius:2px;white-space:nowrap}
+nav.tabs{display:flex;gap:2px;overflow-x:auto}
+nav.tabs button{appearance:none;border:0;background:none;font:inherit;font-weight:700;color:var(--muted);padding:12px 16px;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+nav.tabs button:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+main{padding:30px 0 70px}
+section.tabpane[hidden]{display:none!important}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.12em;color:var(--accent-ink);text-transform:uppercase;margin:0 0 6px}
+h2{font-family:var(--serif);font-weight:700;font-size:22px;margin:0 0 14px;letter-spacing:-.01em;text-wrap:balance}
+h3{font-size:16px;margin:0 0 8px}
+p{margin:0 0 12px}
+.grid{display:grid;gap:14px}
+.cols3{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:18px 20px}
+.callout{border-left:4px solid var(--accent);background:var(--accent-soft);border-radius:0 6px 6px 0;padding:14px 18px;margin:0 0 22px}
+.callout.warn{border-left-color:var(--crit);background:var(--crit-soft)}
+.bignum{font-family:var(--mono);font-size:26px;font-weight:600;color:var(--accent-ink)}
+.tablewrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:6px}
+table{border-collapse:collapse;width:100%;min-width:720px;font-size:14px}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-size:12px;letter-spacing:.06em;color:var(--muted);font-weight:600}
+tr:last-child td{border-bottom:0}
+.section{margin:0 0 36px}
+ul.tight{margin:0;padding-left:20px}
+ul.tight li{margin:0 0 6px}
+label.fld{display:block;font-weight:700;font-size:13px;margin:0 0 4px}
+input[type=text],input[type=number],select,textarea{width:100%;font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:8px 10px}
+textarea{min-height:80px;resize:vertical}
+.formgrid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin-bottom:20px}
+.rule{background:var(--surface);border:1px solid var(--line);border-radius:6px;margin-bottom:12px}
+.rule summary{display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;list-style:none;flex-wrap:wrap}
+.rule summary::-webkit-details-marker{display:none}
+.rule .rname{font-weight:700;flex:1;min-width:200px}
+.rule .rbody{padding:0 16px 16px;border-top:1px solid var(--line)}
+.chip{font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.chip.w{background:var(--surface2);color:var(--muted)}
+.chip.on{background:var(--accent-soft);color:var(--accent-ink)}
+.chip.crit{background:var(--crit-soft);color:var(--crit)}
+.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.chip.good{background:var(--good-soft);color:var(--good)}
+.sig{display:flex;gap:8px;align-items:flex-start;margin:8px 0}
+.sig input{margin-top:4px;accent-color:var(--accent)}
+.docrow{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:6px 0;flex-wrap:wrap}
+.docrow span{flex:1;min-width:180px;font-size:14px}
+.docrow select{width:130px}
+.subhead{font-family:var(--mono);font-size:12px;letter-spacing:.08em;color:var(--muted);margin:14px 0 4px}
+button.btn{appearance:none;font:inherit;font-weight:700;border-radius:4px;padding:9px 18px;cursor:pointer;border:1px solid var(--accent);background:var(--accent);color:#fff}
+:root[data-theme="dark"] button.btn,body button.btn{}
+button.btn.ghost{background:none;color:var(--accent-ink)}
+button.btn.danger{border-color:var(--crit);background:none;color:var(--crit)}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.scorebar{height:8px;border-radius:999px;background:var(--surface2);overflow:hidden;margin:6px 0 2px}
+.scorebar i{display:block;height:100%;border-radius:999px}
+.case{border-left:5px solid var(--line)}
+.case.crit{border-left-color:var(--crit)}
+.case.warn{border-left-color:var(--warn)}
+.case.low{border-left-color:var(--good)}
+.case h3{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.case .meta{color:var(--muted);font-size:13px;margin-bottom:8px}
+.scoregrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:10px 0}
+.scoregrid b{font-family:var(--mono);font-size:20px}
+.missing{font-size:13px;color:var(--muted)}
+.missing strong{color:var(--crit)}
+#reportOut{font-family:var(--mono);font-size:13px;min-height:340px;white-space:pre-wrap}
+.portalbtns{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.portalbtns a{display:inline-block;border:1px solid var(--accent);color:var(--accent-ink);text-decoration:none;font-weight:700;border-radius:4px;padding:8px 14px;font-size:14px}
+.empty{color:var(--muted);text-align:center;padding:40px 0}
+footer.site{border-top:1px solid var(--line);color:var(--muted);font-size:12px;padding:18px 0 40px}
+@media (prefers-reduced-motion: no-preference){ .scorebar i{transition:width .4s ease} }
+</style>
+</head>
+<body>
+<header class="site"><div class="wrap">
+  <div class="masthead">
+    <h1>보조금 부정수급 조사 데스크</h1>
+    <span class="tag">SUBSIDY FRAUD DESK · 조사→진단→신고</span>
+  </div>
+  <nav class="tabs" role="tablist">
+    <button role="tab" aria-selected="true" data-tab="guide">신고 가이드·포털</button>
+    <button role="tab" aria-selected="false" data-tab="assess">사례 진단</button>
+    <button role="tab" aria-selected="false" data-tab="rank">위험도 순위</button>
+    <button role="tab" aria-selected="false" data-tab="report">신고서 생성</button>
+  </nav>
+</div></header>
+
+<main class="wrap">
+
+<!-- ══════════ TAB 1 · 가이드 ══════════ -->
+<section class="tabpane" id="pane-guide">
+  <div class="section">
+    <p class="eyebrow">RESEARCH SUMMARY</p>
+    <h2>성공률이 높은 신고 방식 — 조사 결과</h2>
+    <div class="callout">
+      <strong>핵심은 세 가지: ① 실명(기명) 신고 ② 구체적 증거 첨부 ③ 올바른 관할 선택.</strong><br>
+      부패방지권익위법·공익신고자보호법상 신고는 인적사항을 명시한 기명 신고가 원칙이며(익명 신고 불인정),
+      신원 노출이 부담되면 <b>변호사를 통한 비실명 대리신고</b>(국민권익위원회만 접수 가능)를 이용할 수 있습니다.
+      누가·언제·어디서·무엇을·어떻게·왜(육하원칙)로 정리된 신고서와 계좌내역·계약서 등 객관적 증빙이 첨부될수록
+      조사 착수율과 환수 성공률이 높아집니다.
+    </div>
+    <div class="grid cols3">
+      <div class="card"><p class="eyebrow">보상금</p><div class="bignum">최대 30억 원</div>
+        <p>신고로 공공기관 수입이 회복·증대되면 보상대상가액의 구간별 <b>4~30%</b>를 보상금으로 지급.</p></div>
+      <div class="card"><p class="eyebrow">포상금</p><div class="bignum">최대 5억 원</div>
+        <p>수입 회복에 직접 기여하지 않아도 공익 증진에 기여한 신고에는 포상금 지급 가능.</p></div>
+      <div class="card"><p class="eyebrow">제재부가금 (공공재정환수법)</p><div class="bignum">부정이익의 최대 5배</div>
+        <p>허위청구 <b>500%</b> · 과다청구 <b>300%</b> · 목적 외 사용 <b>200%</b> 부과 + 전액 환수, 명단 공표.</p></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <p class="eyebrow">PORTAL DIRECTORY</p>
+    <h2>신고·확인 포털 취합</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>포털·기관</th><th>대상</th><th>특징</th><th>접속</th></tr></thead>
+      <tbody>
+        <tr><td><b>청렴포털 (국민권익위)</b><br>clean.go.kr</td><td>모든 부패·공익침해, 복지·보조금 부정수급 통합</td><td>온라인 접수·결과조회, 비실명 대리신고, 신고자 보호 총괄</td><td><a href="https://www.clean.go.kr" target="_blank" rel="noopener">신고하기</a></td></tr>
+        <tr><td><b>복지·보조금 부정수급 통합신고센터</b><br>국번 없이 110 / 1398</td><td>정부 예산·기금 재원의 모든 보조금·지원금</td><td>전화 상담 후 접수 가능, 1398.acrc.go.kr 온라인 접수</td><td><a href="https://1398.acrc.go.kr/hpg/req/hpgPssStep1.do" target="_blank" rel="noopener">1398 접수</a></td></tr>
+        <tr><td><b>보조금통합포털(보조금24)</b><br>bojo.go.kr</td><td>국고보조금 부정수급 제보</td><td>내가 받는 보조금 조회로 이중수급·자격 확인 가능</td><td><a href="https://www.bojo.go.kr/ga/retrieveReport.do" target="_blank" rel="noopener">제보하기</a></td></tr>
+        <tr><td><b>e나라도움 (한국재정정보원)</b><br>gosims.go.kr</td><td>국고보조사업 집행·정산 부정</td><td>부정수급 주요 사례 공개, 부정징후탐지시스템(SFDS) 운영 주체</td><td><a href="https://www.gosims.go.kr/hg/hg002/retrieveIllegalcaseList.do" target="_blank" rel="noopener">사례·제보</a></td></tr>
+        <tr><td><b>복지로 / 보건복지상담센터 129</b></td><td>기초생활보장·기초연금 등 복지급여</td><td>복지급여 특화, 지자체 조사 연계</td><td><a href="https://www.bokjiro.go.kr" target="_blank" rel="noopener">복지로</a></td></tr>
+        <tr><td><b>고용노동부 1350</b></td><td>고용장려금·실업급여·고용유지지원금</td><td>고용보험 부정수급 자진신고 시 추가징수 면제 제도</td><td><a href="https://www.moel.go.kr" target="_blank" rel="noopener">고용부</a></td></tr>
+        <tr><td><b>감사원</b><br>bai.go.kr</td><td>재정·예산 집행 비리, 공직자 관련</td><td>국민감사청구·재정비리 신고</td><td><a href="https://www.bai.go.kr" target="_blank" rel="noopener">감사원</a></td></tr>
+        <tr><td><b>국민신문고</b><br>epeople.go.kr</td><td>소관 기관이 불명확할 때</td><td>자동으로 소관 기관 배정</td><td><a href="https://www.epeople.go.kr" target="_blank" rel="noopener">국민신문고</a></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="section">
+    <p class="eyebrow">REQUIREMENTS</p>
+    <h2>신고 요건 · 필수 준비물</h2>
+    <div class="grid cols3">
+      <div class="card"><h3>① 신고서 기재사항</h3><ul class="tight">
+        <li>신고자 인적사항(성명·연락처·주소) — <b>기명 원칙</b></li>
+        <li>피신고자(부정수급자)와 행위 내용</li>
+        <li>신고 취지와 이유 (육하원칙)</li></ul></div>
+      <div class="card"><h3>② 증거자료</h3><ul class="tight">
+        <li>계좌 거래내역, 계약서·세금계산서 사본</li>
+        <li>급여대장, 근태기록, 사진, 대화기록</li>
+        <li>증거 없이 추측만으로는 조사 착수가 어려움</li></ul></div>
+      <div class="card"><h3>③ 신고자 보호</h3><ul class="tight">
+        <li>신분보장·신변보호·비밀보장 (법정 의무)</li>
+        <li>신고 관련 본인 위법행위 책임감면 가능</li>
+        <li>변호사 비실명 대리신고 (권익위 전용)</li></ul></div>
+    </div>
+    <div class="callout warn" style="margin-top:14px">
+      <b>주의:</b> 허위 사실을 신고하면 무고죄·명예훼손 책임을 질 수 있습니다. 이 도구의 위험도 점수는 조사 우선순위를
+      정하기 위한 참고 지표일 뿐이며, 부정수급 여부의 최종 판단은 조사기관·수사기관의 몫입니다.
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ TAB 2 · 진단 ══════════ -->
+<section class="tabpane" id="pane-assess" hidden>
+  <p class="eyebrow">CASE ASSESSMENT</p>
+  <h2>사례 진단 — 탐지 로직 14종</h2>
+  <p>정부 부정징후탐지시스템(SFDS) 탐지 패턴과 기획재정부·권익위 적발 사례에서 도출한 로직입니다.
+  해당하는 징후를 체크하고, 각 로직별 필요 증빙의 확보 상태를 표시하세요. 저장하면 <b>위험도 순위</b> 탭에 정렬됩니다.</p>
+
+  <div class="formgrid">
+    <div><label class="fld" for="f-name">사례명 *</label><input type="text" id="f-name" placeholder="예: ○○협회 인건비 부정 의혹"></div>
+    <div><label class="fld" for="f-target">피신고 대상</label><input type="text" id="f-target" placeholder="기관·업체·개인명"></div>
+    <div><label class="fld" for="f-type">보조금 종류</label><select id="f-type">
+      <option>국고보조금</option><option>지방보조금</option><option>복지급여</option>
+      <option>고용지원금</option><option>연구개발비(R&amp;D)</option><option>기타</option></select></div>
+    <div><label class="fld" for="f-amount">추정 부정수급액 (만원)</label><input type="number" id="f-amount" min="0" placeholder="0"></div>
+  </div>
+  <div style="margin-bottom:20px"><label class="fld" for="f-memo">사건 개요 메모</label>
+    <textarea id="f-memo" placeholder="누가, 언제, 어디서, 무엇을, 어떻게, 왜 — 육하원칙으로 정리"></textarea></div>
+
+  <div id="ruleList"></div>
+
+  <div class="card" style="position:sticky;bottom:12px">
+    <div class="scoregrid" style="margin:0 0 4px">
+      <div><span class="subhead" style="margin-top:0">위험도</span><b id="liveRisk">0</b><span style="font-family:var(--mono)">/100</span>
+        <div class="scorebar"><i id="liveRiskBar" style="width:0;background:var(--accent)"></i></div></div>
+      <div><span class="subhead" style="margin-top:0">증빙 준비도</span><b id="liveDoc">–</b><span style="font-family:var(--mono)">%</span>
+        <div class="scorebar"><i id="liveDocBar" style="width:0;background:var(--good)"></i></div></div>
+    </div>
+    <div class="btnrow" style="margin-top:8px">
+      <button class="btn" id="saveCase">사례 저장</button>
+      <button class="btn ghost" id="resetForm">새로 입력</button>
+      <span id="editNotice" class="chip warn" hidden>수정 중</span>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ TAB 3 · 순위 ══════════ -->
+<section class="tabpane" id="pane-rank" hidden>
+  <p class="eyebrow">PRIORITY RANKING</p>
+  <h2>위험도 순위 — 부정수급 확률이 높은 순</h2>
+  <p>우선순위 점수 = 위험도 70% + 증빙 준비도 30%. 미비사항(부족한 필수 증빙)이 함께 표시됩니다.</p>
+  <div id="caseList"></div>
+</section>
+
+<!-- ══════════ TAB 4 · 신고서 ══════════ -->
+<section class="tabpane" id="pane-report" hidden>
+  <p class="eyebrow">REPORT BUILDER</p>
+  <h2>신고서 자동 생성</h2>
+  <p>선택한 사례의 진단 결과로 신고서 초안을 만듭니다. 정부 포털은 본인인증이 필요해 외부 프로그램의 자동 제출을
+  허용하지 않으므로, 생성된 신고서를 <b>복사해 포털 신고 양식에 붙여넣는 방식</b>이 실제로 가장 빠르고 안전합니다.
+  신고자 정보는 이 기기(브라우저)에만 저장됩니다.</p>
+
+  <div class="formgrid">
+    <div><label class="fld" for="r-case">사례 선택</label><select id="r-case"></select></div>
+    <div><label class="fld" for="r-rname">신고자 성명 *</label><input type="text" id="r-rname"></div>
+    <div><label class="fld" for="r-rphone">연락처 *</label><input type="text" id="r-rphone"></div>
+    <div><label class="fld" for="r-raddr">주소</label><input type="text" id="r-raddr"></div>
+  </div>
+  <div class="btnrow" style="margin:0 0 16px">
+    <button class="btn" id="genReport">신고서 생성</button>
+    <button class="btn ghost" id="copyReport">복사</button>
+    <button class="btn ghost" id="dlReport">.txt 저장</button>
+    <span id="copyDone" class="chip good" hidden>복사됨</span>
+  </div>
+  <textarea id="reportOut" aria-label="생성된 신고서" placeholder="사례를 선택하고 [신고서 생성]을 누르세요."></textarea>
+  <div class="portalbtns">
+    <a href="https://www.clean.go.kr" target="_blank" rel="noopener">청렴포털에 제출 →</a>
+    <a href="https://1398.acrc.go.kr/hpg/req/hpgPssStep1.do" target="_blank" rel="noopener">1398 온라인 접수 →</a>
+    <a href="https://www.bojo.go.kr/ga/retrieveReport.do" target="_blank" rel="noopener">보조금통합포털 제보 →</a>
+  </div>
+</section>
+</main>
+
+<footer class="site"><div class="wrap">
+  근거: 보조금 관리에 관한 법률 §40–43 · 공공재정 부정청구 금지 및 부정이익 환수 등에 관한 법률 · 부패방지권익위법 · 공익신고자 보호법 ·
+  기획재정부 국고보조금 부정징후 점검(SFDS) 발표자료. 본 도구는 신고 준비를 돕는 참고용이며 법률 자문이 아닙니다.
+</div></footer>
+
+<script>
+/* ── 탐지 로직 14종: 정부 SFDS 패턴 + 적발 사례 기반, weight = 심각도(회수 실적 기준) ── */
+const RULES=[
+ {id:"ghost",   name:"유령직원 인건비 청구", w:9, law:"보조금법 §40(허위신청), 형법 §347(사기)",
+  sig:["근무 사실이 없는 인원이 급여대장·참여인력에 등재되어 있다","4대보험 가입내역과 실제 근무 사실이 불일치한다","출근부·근태기록이 없거나 사후 작성된 정황이 있다"],
+  docs:["급여대장·급여 이체내역","4대보험 가입자 명부","출근부·출입기록","동료·관계자 진술"]},
+ {id:"payback", name:"인건비 페이백(급여 회수)", w:9, law:"보조금법 §41, 공공재정환수법 §8(허위청구 500%)",
+  sig:["급여 지급 후 현금·계좌로 일부를 되돌려 받는다","직원 계좌에서 대표·법인 계좌로 반복 이체가 있다","실수령액이 신고된 급여와 다르다는 진술이 있다"],
+  docs:["직원·대표 계좌 거래내역","반환 요구 대화기록(문자·메신저)","피해 직원 진술서"]},
+ {id:"inflate", name:"물품 단가·수량 부풀리기", w:8, law:"공공재정환수법 §8(과다청구 300%)",
+  sig:["시장가 대비 현저히 높은 단가로 구매·정산했다","납품 수량이 실제 확인 수량과 불일치한다","간이영수증·허위 매출전표가 다수 사용됐다"],
+  docs:["세금계산서·견적서 사본","동일 품목 시장가 비교자료","실물 재고·납품 확인 기록"]},
+ {id:"shell",   name:"유령회사·허위계약", w:9, law:"보조금법 §40, 형법 §347",
+  sig:["거래업체가 사업장 실체 없는 페이퍼컴퍼니로 의심된다","설립 직후 거래 또는 계약 직후 폐업했다","계약된 용역·납품의 결과물이 존재하지 않는다"],
+  docs:["사업자등록·폐업 조회 결과","계약서·과업지시서","결과물 부존재 증빙(현장사진 등)"]},
+ {id:"family",  name:"가족·특수관계인 거래 (SFDS 패턴)", w:7, law:"보조금법 §22(용도외 사용 금지)",
+  sig:["대표의 가족·친인척 업체와 수의계약했다","임직원이 겸직 중인 업체에 발주했다","특수관계 거래 가격이 정상 시세와 괴리된다"],
+  docs:["가족관계·법인등기 확인 자료","계약서·발주 내역","대금 지급 흐름 자료"]},
+ {id:"taxcxl",  name:"세금계산서 발행 후 취소 (SFDS 패턴)", w:7, law:"공공재정환수법 §8",
+  sig:["정산 증빙 제출 후 해당 세금계산서가 취소됐다","취소·재발행이 반복된 거래가 있다","홈택스 발행내역과 정산보고서가 불일치한다"],
+  docs:["전자세금계산서 발행·취소 내역","정산보고서 사본"]},
+ {id:"rebate",  name:"외주 리베이트 수수", w:8, law:"형법 §357(배임수재), 보조금법 §41",
+  sig:["외주대금 지급 후 일부를 되돌려 받았다","특정 업체 몰아주기와 금품·접대 정황이 있다","실제 용역 규모 대비 대금이 과다하다"],
+  docs:["외주업체·발주처 계좌 흐름","관계자 진술·대화기록","용역 계약서와 실제 결과물 비교"]},
+ {id:"misuse",  name:"목적 외 사용", w:8, law:"보조금법 §22·§41, 공공재정환수법 §8(200%)",
+  sig:["보조금으로 채무 상환·개인 차량 구입 등 사업 무관 지출을 했다","보조금 계좌에서 개인 계좌로 이체됐다","구입 물품이 개인적으로 사용되고 있다"],
+  docs:["보조금 전용계좌 거래내역","지출 증빙과 실제 용도 대조 자료","구입 물품 실물·사용처 사진"]},
+ {id:"double",  name:"이중 수급", w:7, law:"보조금법 §40, 공공재정환수법 §8",
+  sig:["동일 사업으로 복수 기관에서 보조금을 받았다","동일 증빙을 여러 정산에 재사용했다","타 기관 지원 사실을 고지하지 않았다"],
+  docs:["각 기관 교부결정 통지서","중복 제출된 정산서류 대조"]},
+ {id:"eligib",  name:"자격요건 허위 신청", w:8, law:"보조금법 §40(거짓 신청)",
+  sig:["소득·재산·고용 요건을 허위로 기재했다","시설·인력 기준 미달인데 충족으로 신고했다","타인 명의(차명)로 신청·수급했다"],
+  docs:["신청서 사본","실제 요건 확인 자료(소득·고용 등)","명의 관련 자료"]},
+ {id:"label",   name:"라벨갈이·장비 바꿔치기", w:7, law:"보조금법 §41, 형법 §347",
+  sig:["중고·저가품을 신품·고가품으로 정산했다","구매 장비의 라벨·일련번호가 명세와 불일치한다","정산된 장비가 현장에 존재하지 않는다"],
+  docs:["현장 실물 사진","장비 일련번호 대조 기록","구매 명세·수입신고 자료"]},
+ {id:"dead",    name:"사망자·해외체류자 명의 수급 (SFDS 패턴)", w:9, law:"공공재정환수법 §8(허위청구)",
+  sig:["수급자 사망 이후에도 지급이 계속됐다","장기 해외체류 중 국내 활동 실적이 청구됐다","수감 등 활동 불가능한 사람 명의로 청구됐다"],
+  docs:["지급 내역","사망·출입국 사실 확인 자료"]},
+ {id:"pad",     name:"실적 부풀리기·허위 결과보고", w:6, law:"보조금법 §27(정산보고), §41",
+  sig:["참여 인원·교육 횟수 등 실적을 부풀렸다","행사 사진을 재사용·연출·조작했다","결과보고서와 실제 운영 내용이 불일치한다"],
+  docs:["실제 참여자 명단·서명부","사진 원본(메타데이터)","현장 확인 기록"]},
+ {id:"forge",   name:"증빙서류 위·변조", w:9, law:"형법 §231(사문서위조), 보조금법 §40",
+  sig:["계약서·통장사본·영수증의 위변조 정황이 있다","서명·직인이 원본과 불일치한다","문서 작성일자가 소급·조작된 정황이 있다"],
+  docs:["위변조 의심 문서 사본","원본 대조 자료","작성 시점 입증 자료"]}
+];
+const DOC_STATE=[["0","미확보"],["1","확보 가능"],["2","확보됨"]];
+const LS_KEY="sfd-cases-v1";
+
+/* ── state ── */
+let cases=[]; try{cases=JSON.parse(localStorage.getItem(LS_KEY))||[]}catch(e){cases=[]}
+let editId=null;
+const save=()=>{try{localStorage.setItem(LS_KEY,JSON.stringify(cases))}catch(e){}};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* ── tabs ── */
+document.querySelectorAll("nav.tabs button").forEach(b=>b.addEventListener("click",()=>showTab(b.dataset.tab)));
+function showTab(t){
+  document.querySelectorAll("nav.tabs button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tab===t)));
+  document.querySelectorAll(".tabpane").forEach(p=>p.hidden=(p.id!=="pane-"+t));
+  if(t==="rank")renderCases(); if(t==="report")fillCaseSelect();
+}
+
+/* ── 진단 폼 렌더 ── */
+function renderRules(){
+  $("#ruleList").innerHTML=RULES.map((r,i)=>`
+  <details class="rule" id="rule-${r.id}">
+    <summary><span class="chip w">L${String(i+1).padStart(2,"0")}</span>
+      <span class="rname">${esc(r.name)}</span>
+      <span class="chip w">가중치 ${r.w}</span>
+      <span class="chip on" data-count hidden></span></summary>
+    <div class="rbody">
+      <p class="subhead">징후 체크</p>
+      ${r.sig.map((s,j)=>`<label class="sig"><input type="checkbox" data-rule="${r.id}" data-sig="${j}"><span>${esc(s)}</span></label>`).join("")}
+      <p class="subhead">필요 증빙 · 확보 상태</p>
+      ${r.docs.map((d,j)=>`<div class="docrow"><span>${esc(d)}</span>
+        <select data-rule="${r.id}" data-doc="${j}">${DOC_STATE.map(([v,l])=>`<option value="${v}">${l}</option>`).join("")}</select></div>`).join("")}
+      <p class="subhead" style="margin-bottom:0">근거 법령: <span style="font-family:var(--mono)">${esc(r.law)}</span></p>
+    </div>
+  </details>`).join("");
+  $("#ruleList").addEventListener("change",()=>{updateBadges();updateLive();});
+}
+function readForm(){
+  const sig={},docs={};
+  document.querySelectorAll("#ruleList input[type=checkbox]").forEach(c=>{ if(c.checked){(sig[c.dataset.rule]??=[]).push(+c.dataset.sig)} });
+  document.querySelectorAll("#ruleList select[data-doc]").forEach(s=>{ if(s.value!=="0"){(docs[s.dataset.rule]??={})[s.dataset.doc]=+s.value} });
+  return {name:$("#f-name").value.trim(),target:$("#f-target").value.trim(),type:$("#f-type").value,
+    amount:+$("#f-amount").value||0,memo:$("#f-memo").value.trim(),sig,docs};
+}
+function writeForm(c){
+  $("#f-name").value=c?.name||""; $("#f-target").value=c?.target||""; $("#f-type").value=c?.type||"국고보조금";
+  $("#f-amount").value=c?.amount||""; $("#f-memo").value=c?.memo||"";
+  document.querySelectorAll("#ruleList input[type=checkbox]").forEach(x=>x.checked=!!c?.sig?.[x.dataset.rule]?.includes(+x.dataset.sig));
+  document.querySelectorAll("#ruleList select[data-doc]").forEach(s=>s.value=String(c?.docs?.[s.dataset.rule]?.[s.dataset.doc]??0));
+  updateBadges();updateLive();
+}
+function updateBadges(){
+  RULES.forEach(r=>{
+    const n=document.querySelectorAll(`#rule-${r.id} input:checked`).length;
+    const b=document.querySelector(`#rule-${r.id} [data-count]`);
+    b.hidden=n===0; b.textContent=`징후 ${n}건`;
+  });
+}
+
+/* ── 점수 계산 ──
+   위험도 = Σ(가중치 × 체크된 징후 비율) / Σ(전체 가중치) × 100
+   증빙 준비도 = 발동된 로직의 필요 증빙 확보 상태 평균 (확보=1, 확보가능=0.5)
+   우선순위 = 위험도×0.7 + 준비도×0.3  */
+function score(c){
+  let got=0,max=0; RULES.forEach(r=>{max+=r.w; const n=(c.sig?.[r.id]||[]).length; if(n)got+=r.w*(n/r.sig.length);});
+  const risk=Math.round(got/max*100);
+  const trig=RULES.filter(r=>(c.sig?.[r.id]||[]).length);
+  let dGot=0,dMax=0,missing=[];
+  trig.forEach(r=>r.docs.forEach((d,j)=>{dMax+=2; const v=+(c.docs?.[r.id]?.[j]??0); dGot+=v; if(v===0)missing.push(d);}));
+  const doc=dMax?Math.round(dGot/dMax*100):0;
+  return {risk,doc,prio:Math.round(risk*.7+doc*.3),trig,missing:[...new Set(missing)]};
+}
+function updateLive(){
+  const s=score(readForm());
+  $("#liveRisk").textContent=s.risk; $("#liveRiskBar").style.width=s.risk+"%";
+  $("#liveRiskBar").style.background=s.risk>=60?"var(--crit)":s.risk>=30?"var(--warn)":"var(--accent)";
+  $("#liveDoc").textContent=s.trig.length?s.doc:"–"; $("#liveDocBar").style.width=(s.trig.length?s.doc:0)+"%";
+}
+
+/* ── 저장·목록 ── */
+$("#saveCase").addEventListener("click",()=>{
+  const c=readForm();
+  if(!c.name){alert("사례명을 입력하세요.");$("#f-name").focus();return}
+  if(editId){const i=cases.findIndex(x=>x.id===editId); c.id=editId; c.created=cases[i].created; c.updated=Date.now(); cases[i]=c;}
+  else{c.id="c"+Date.now(); c.created=Date.now(); cases.push(c);}
+  save(); editId=null; $("#editNotice").hidden=true; writeForm(null); showTab("rank");
+});
+$("#resetForm").addEventListener("click",()=>{editId=null;$("#editNotice").hidden=true;writeForm(null)});
+
+function renderCases(){
+  const el=$("#caseList");
+  if(!cases.length){el.innerHTML='<p class="empty">저장된 사례가 없습니다. [사례 진단] 탭에서 첫 사례를 진단해 보세요.</p>';return}
+  const rows=cases.map(c=>({c,s:score(c)})).sort((a,b)=>b.s.prio-a.s.prio);
+  el.innerHTML=rows.map(({c,s},i)=>{
+    const lv=s.risk>=60?["crit","고위험"]:s.risk>=30?["warn","중위험"]:["low","저위험"];
+    return `<div class="card case ${lv[0]}" style="margin-bottom:14px">
+      <h3><span class="chip w">${i+1}위</span> ${esc(c.name)} <span class="chip ${lv[0]==='low'?'good':lv[0]}">${lv[1]}</span>
+        <span class="chip w">우선순위 ${s.prio}</span></h3>
+      <div class="meta">${esc(c.target||"대상 미상")} · ${esc(c.type)}${c.amount?` · 추정 ${c.amount.toLocaleString()}만원`:""}</div>
+      <div class="scoregrid">
+        <div><span class="subhead" style="margin-top:0">위험도 ${s.risk}/100</span>
+          <div class="scorebar"><i style="width:${s.risk}%;background:var(--${lv[0]==='crit'?'crit':lv[0]==='warn'?'warn':'accent'})"></i></div></div>
+        <div><span class="subhead" style="margin-top:0">증빙 준비도 ${s.trig.length?s.doc+"%":"–"}</span>
+          <div class="scorebar"><i style="width:${s.trig.length?s.doc:0}%;background:var(--good)"></i></div></div>
+      </div>
+      <div style="margin:6px 0">${s.trig.map(r=>`<span class="chip on" style="margin:0 4px 4px 0;display:inline-block">${esc(r.name)}</span>`).join("")||'<span class="chip w">발동된 로직 없음</span>'}</div>
+      ${s.missing.length?`<p class="missing"><strong>미비사항 ${s.missing.length}건:</strong> ${s.missing.map(esc).join(" · ")}</p>`:
+        (s.trig.length?'<p class="missing" style="color:var(--good)">필요 증빙이 모두 확보(가능) 상태입니다.</p>':"")}
+      <div class="btnrow" style="margin-top:10px">
+        <button class="btn" data-report="${c.id}">신고서 생성</button>
+        <button class="btn ghost" data-edit="${c.id}">수정</button>
+        <button class="btn danger" data-del="${c.id}">삭제</button>
+      </div></div>`;}).join("");
+}
+$("#caseList").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b)return;
+  if(b.dataset.edit){editId=b.dataset.edit; writeForm(cases.find(c=>c.id===editId)); $("#editNotice").hidden=false; showTab("assess"); window.scrollTo({top:0});}
+  if(b.dataset.del){const c=cases.find(x=>x.id===b.dataset.del); if(confirm(`"${c.name}" 사례를 삭제할까요?`)){cases=cases.filter(x=>x.id!==b.dataset.del);save();renderCases();}}
+  if(b.dataset.report){showTab("report"); $("#r-case").value=b.dataset.report; genReport();}
+});
+
+/* ── 신고서 생성 ── */
+function fillCaseSelect(){
+  const sel=$("#r-case"); const cur=sel.value;
+  sel.innerHTML=cases.length?cases.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join(""):'<option value="">저장된 사례 없음</option>';
+  if(cur&&cases.some(c=>c.id===cur))sel.value=cur;
+}
+function genReport(){
+  const c=cases.find(x=>x.id===$("#r-case").value);
+  if(!c){alert("먼저 [사례 진단]에서 사례를 저장하세요.");return}
+  const s=score(c); const today=new Date().toISOString().slice(0,10);
+  const secured=[],possible=[];
+  s.trig.forEach(r=>r.docs.forEach((d,j)=>{const v=+(c.docs?.[r.id]?.[j]??0); if(v===2)secured.push(d); else if(v===1)possible.push(d);}));
+  const u=a=>[...new Set(a)];
+  const txt=
+`■ 복지·보조금 부정수급 신고서 (초안)                        작성일: ${today}
+
+1. 신고자 인적사항
+  성  명: ${$("#r-rname").value.trim()||"(입력 필요)"}
+  연락처: ${$("#r-rphone").value.trim()||"(입력 필요)"}
+  주  소: ${$("#r-raddr").value.trim()||"-"}
+  ※ 기명 신고 원칙. 신원 노출이 우려되면 변호사 비실명 대리신고(국민권익위 전용) 이용 가능.
+
+2. 피신고자(부정수급 의심 대상)
+  대  상: ${c.target||"(미상)"}
+  보조금 종류: ${c.type}
+  추정 부정수급액: ${c.amount?c.amount.toLocaleString()+"만원":"미상"}
+
+3. 신고 취지
+  피신고자가 아래와 같은 방법으로 보조금을 부정하게 수급한 의혹이 있어,
+  사실관계 조사와 부정이익 환수·제재부가금 부과를 요청합니다.
+
+4. 부정수급 의심 유형 및 근거 (위험도 ${s.risk}/100)
+${s.trig.map((r,i)=>`  ${i+1}) ${r.name} [근거 법령: ${r.law}]
+${(c.sig[r.id]||[]).map(j=>`     - ${r.sig[j]}`).join("\n")}`).join("\n")||"  (체크된 유형 없음)"}
+
+5. 사건 경위
+${c.memo?c.memo.split("\n").map(l=>"  "+l).join("\n"):"  (육하원칙으로 경위를 기재하세요)"}
+
+6. 증거자료
+  [확보된 증거]
+${u(secured).map(d=>`  - ${d}`).join("\n")||"  - (없음)"}
+  [확보 가능한 증거 — 조사 시 확인 요청]
+${u(possible).map(d=>`  - ${d}`).join("\n")||"  - (없음)"}
+${s.missing.length?`  [미비사항 — 보완 필요]\n${s.missing.map(d=>`  - ${d}`).join("\n")}`:""}
+
+7. 제출처 (택1)
+  - 청렴포털 clean.go.kr / 복지·보조금 부정수급 통합신고센터(국번 없이 110·1398)
+  - 보조금통합포털 bojo.go.kr 부정수급 제보 / e나라도움 gosims.go.kr
+  - 관할이 불명확한 경우 국민신문고 epeople.go.kr
+
+  위 내용은 사실이며, 허위 신고 시 관련 법에 따른 책임이 있음을 확인합니다.
+                                        신고인: ${$("#r-rname").value.trim()||"(성명)"} (서명)`;
+  $("#reportOut").value=txt;
+}
+$("#genReport").addEventListener("click",genReport);
+$("#copyReport").addEventListener("click",async()=>{
+  if(!$("#reportOut").value)genReport();
+  try{await navigator.clipboard.writeText($("#reportOut").value);}
+  catch(e){$("#reportOut").select();document.execCommand("copy");}
+  $("#copyDone").hidden=false; setTimeout(()=>$("#copyDone").hidden=true,2000);
+});
+$("#dlReport").addEventListener("click",()=>{
+  if(!$("#reportOut").value)genReport();
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([$("#reportOut").value],{type:"text/plain;charset=utf-8"}));
+  a.download="부정수급_신고서_초안.txt"; a.click(); URL.revokeObjectURL(a.href);
+});
+
+renderRules(); writeForm(null);
+</script>
+</body>
+</html>
