@@ -495,11 +495,17 @@ $("#copyReport").addEventListener("click",async()=>{
   catch(e){$("#reportOut").select();document.execCommand("copy");}
   $("#copyDone").hidden=false; setTimeout(()=>$("#copyDone").hidden=true,2000);
 });
-$("#dlReport").addEventListener("click",()=>{
+let dlCap;
+$("#dlReport").addEventListener("click",async()=>{
   if(!$("#reportOut").value)genReport();
+  const filename="부정수급_신고서_초안.txt",data=$("#reportOut").value;
+  if(window.claude?.use){
+    dlCap??=await claude.use("downloads");
+    if(dlCap){try{await dlCap.save({filename,data})}catch(e){} return}
+  }
   const a=document.createElement("a");
-  a.href=URL.createObjectURL(new Blob([$("#reportOut").value],{type:"text/plain;charset=utf-8"}));
-  a.download="부정수급_신고서_초안.txt"; a.click(); URL.revokeObjectURL(a.href);
+  a.href=URL.createObjectURL(new Blob([data],{type:"text/plain;charset=utf-8"}));
+  a.download=filename; a.click(); URL.revokeObjectURL(a.href);
 });
 
 renderRules(); writeForm(null);
