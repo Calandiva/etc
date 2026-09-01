@@ -1,0 +1,40 @@
+name: 정보공시 수집·분석
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "recon(구조 정찰) 또는 collect(수집+분석)"
+        required: true
+        default: "recon"
+        type: choice
+        options: [recon, collect]
+  schedule:
+    - cron: "0 21 * * 1"   # 매주 화요일 06:00 KST — 공시 갱신 반영
+
+permissions:
+  contents: write
+
+concurrency:
+  group: collect
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: 수집 실행
+        run: python crawler/collect.py "${{ github.event.inputs.mode || 'collect' }}"
+      - name: 결과 커밋
+        run: |
+          git config user.name "disclosure-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A data/
+          git diff --cached --quiet || git commit -m "data: 정보공시 ${{ github.event.inputs.mode || 'collect' }} 결과 ($(date -u +%Y-%m-%dT%H:%MZ))"
+          git push

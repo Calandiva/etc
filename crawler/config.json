@@ -1,0 +1,18 @@
+{
+  "_comment": "recon 결과(data/recon/report.json)를 보고 보정하는 수집 명세",
+  "delayMs": 900,
+  "list": {
+    "url": "https://www.bojo.go.kr/ea/getEA001201View.do",
+    "method": "GET",
+    "data": null,
+    "pageParam": "pageIndex",
+    "startPage": 1,
+    "pages": 10
+  },
+  "detail": {
+    "urlTemplate": "",
+    "idFrom": "onclick",
+    "idRegex": "['\"]([0-9A-Za-z_-]{4,40})['\"]",
+    "max": 100
+  }
+}
