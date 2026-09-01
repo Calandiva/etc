@@ -18,13 +18,13 @@
  "browser": {
   "listUrl": "https://www.bojo.go.kr/ea/getEA001201View.do",
   "years": [
-   2024
+   2024,
+   2023
   ],
   "maxProjects": 120,
   "delayMs": 700,
   "rowSelector": "table tr",
-  "maxPages": 3,
-  "perPage": 100,
-  "maxCodes": 1
+  "maxPages": 50,
+  "perPage": 100
  }
 }
