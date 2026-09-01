@@ -10,12 +10,12 @@ BASE="https://www.bojo.go.kr"
 LIST_PAGE=BASE+"/ea/getEA001201View.do"
 DATA_EP="/ea/retrieveInfoPblntfTrgetMngList.do"
 
-def params(year, page, per=100, basis="2", jrsd="", sysse=""):
+def params(year, page, per=100, basis="2", jrsd="", lcgv="", sysse=""):
     return {"currentPageNum":str(page),"countPerPageNum":str(per),
         "fiscalyear":str(year),"bsnsyear":str(year),"jrsdCode":jrsd,
         "excInsttNm":"","ddtlbzNm":"","dcsnBeginDe":"","dcsnEndDe":"",
         "ifpbntSysSeCode":sysse,"sortOrder":"","searchFilterYn":"N",
-        "basisCode":basis,"wdrLcgvCode":"","labSfrndCode":"",
+        "basisCode":basis,"wdrLcgvCode":lcgv,"labSfrndCode":"",
         "selectedMultiText":"","selectedMultiType":"","selectedMultiSysSeCode":""}
 
 def call(page, p):
@@ -79,38 +79,55 @@ def run(mode="api"):
         ctx=br.new_context(user_agent=os.environ.get("CRAWL_UA","SubsidyDisclosureResearch/1.0 (public data)"),locale="ko-KR")
         page=ctx.new_page(); page.set_default_timeout(45000)
         for attempt in range(5):
-            try: page.goto(LIST_PAGE, wait_until="domcontentloaded", timeout=60000); page.wait_for_timeout(2500); break
+            try: page.goto(LIST_PAGE, wait_until="domcontentloaded", timeout=60000); page.wait_for_timeout(3500); break
             except Exception as e: print("goto 재시도",attempt+1,e); page.wait_for_timeout(3000)
+        def opts(sel):
+            try:
+                return page.eval_on_selector(sel,
+                  "el=>[...el.options].map(o=>[o.value,o.text]).filter(o=>o[0]&&o[0]!=='')")
+            except Exception: return []
+        # 국고: 중앙관서(jrsdCode), 지방: 지자체(wdrLcgvCode) 코드 목록
+        page.wait_for_timeout(1500)
+        jrsd=opts("#EA001201Frm_jrsdCode, select[id$=_jrsdCode]")
+        lcgv=opts("#EA001201Frm_wdrLcgvCode, select[id$=_wdrLcgvCode]")
+        (RB/"codes.json").write_text(json.dumps({"jrsd":jrsd,"lcgv":lcgv},ensure_ascii=False,indent=1),encoding="utf-8")
+        print(f"중앙관서 {len(jrsd)}개, 지자체 {len(lcgv)}개")
         # 국고+지방 모두 시도. 국고는 중앙관서 필수라 basis=2(지방)부터, 국고는 sysse로 우회 시도
         plans=[]
         for y in years:
-            plans.append((y,"2",""))    # 지방
-            plans.append((y,"1","002")) # 국고(사회복지시설 등 seCode)
+            for code,nm in (jrsd or [["",""]]):
+                plans.append({"y":y,"basis":"1","jrsd":code,"lcgv":"","label":f"국고/{nm}"})
+            for code,nm in (lcgv or []):
+                plans.append({"y":y,"basis":"2","jrsd":"","lcgv":code,"label":f"지방/{nm}"})
+        cfg_max=int(cfg.get("maxPlans",0))
+        if cfg_max: plans=plans[:cfg_max]
         first_dump=False
-        for (y,basis,sysse) in plans:
-            page_no=1
+        for pl in plans:
+            y=pl["y"]; page_no=1
             while page_no<=max_pages:
                 try:
-                    r=call(page, params(y,page_no,per,basis,sysse=sysse))
+                    r=call(page, params(y,page_no,per,pl["basis"],pl["jrsd"],pl["lcgv"]))
                 except Exception as e:
-                    dbg.append({"y":y,"basis":basis,"page":page_no,"error":str(e)}); break
+                    dbg.append({"plan":pl["label"],"y":y,"page":page_no,"error":str(e)}); break
                 if not r.get("ok"):
-                    dbg.append({"y":y,"basis":basis,"page":page_no,"status":r.get("status"),"text":r.get("text","")[:200]})
-                    break
+                    dbg.append({"plan":pl["label"],"page":page_no,"status":r.get("status"),"text":r.get("text","")[:150]}); break
                 js=r["json"]
                 if not first_dump:
                     (RB/"api-first.json").write_text(json.dumps(js,ensure_ascii=False)[:300000],encoding="utf-8"); first_dump=True
+                err=js.get("ERROR-0000") if isinstance(js,dict) else None
                 items=find_list(js)
                 if not items:
-                    dbg.append({"y":y,"basis":basis,"page":page_no,"note":"list 없음","topkeys":list(js.keys())[:20] if isinstance(js,dict) else str(type(js))})
+                    if page_no==1: dbg.append({"plan":pl["label"],"y":y,"error0":err,"topkeys":list(js.keys())[:12] if isinstance(js,dict) else str(type(js))})
                     break
                 rows,m,keys=rows_from_items(items,y)
-                if page_no==1: dbg.append({"y":y,"basis":basis,"itemKeys":keys[:25],"mappedTo":m,"itemCount":len(items)})
+                if page_no==1 and len(dbg)<3: dbg.append({"plan":pl["label"],"itemKeys":keys[:25],"mappedTo":m,"itemCount":len(items)})
                 if not rows: break
+                for rr in rows: rr["grantor"]=rr.get("grantor") or pl["label"]
                 all_rows.extend(rows)
-                print(f"{y} basis{basis} p{page_no}: {len(rows)}행 (누적 {len(all_rows)})")
+                print(f"{pl['label']} {y} p{page_no}: {len(rows)}행 (누적 {len(all_rows)})")
                 if len(items)<per: break
                 page_no+=1; time.sleep(delay)
+            time.sleep(0.2)
         br.close()
     (RB/"api-debug.json").write_text(json.dumps(dbg,ensure_ascii=False,indent=1),encoding="utf-8")
     if all_rows:
