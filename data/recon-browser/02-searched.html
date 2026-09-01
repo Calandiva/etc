@@ -1,0 +1,1037 @@
+<html><head><script src="/js/iptl/ea/EA001201.js?v=20260708" type="text/javascript"></script>
+<style>
+    .sims .searchGroupBox .df li.w-210 {
+        width: 210px;
+    }
+    
+    .sims .searchGroupBox .df li.w-270 {
+        width: 270px;
+    }
+    
+    .syssecode-label {
+        display: flex; 
+        align-items: center; 
+        gap: 8px;
+    }
+    
+    .syssecode-checkbox {
+        flex-shrink: 0;
+    }
+    
+    .syssecode-span {
+        display: flex; 
+        flex-direction: column;
+    }
+    
+    .f-12 {
+        font-size: 12px;
+    }
+</style>
+<!-- 컨트롤로 넘기는 파라미터 -->
+</head><body><form id="EA001201FrmSrch" name="EA001201FrmSrch" method="post">
+    <input type="hidden" name="currentPageNum" id="EA001201FrmSrch_currentPageNum" value="1" style=""> 
+    <input type="hidden" name="countPerPageNum" id="EA001201FrmSrch_nPageSize" value="10" style="">
+    <input type="hidden" name="fiscalyear" id="EA001201FrmSrch_fsyr" value="2024" style="">
+    <input type="hidden" name="bsnsyear" id="EA001201FrmSrch_bsnsyear" value="2024" style="">
+    <input type="hidden" name="jrsdCode" id="EA001201FrmSrch_jrsdCode" value="" style="">
+    <input type="hidden" name="excInsttNm" id="EA001201FrmSrch_excInsttNm" value="" style="">
+    <input type="hidden" name="ddtlbzNm" id="EA001201FrmSrch_ddtlbzNm" value="" style="">
+    <input type="hidden" name="dcsnBeginDe" id="EA001201FrmSrch_dcsnBeginDe" value="" style="">
+    <input type="hidden" name="dcsnEndDe" id="EA001201FrmSrch_dcsnEndDe" value="" style="">
+    <input type="hidden" name="ifpbntSysSeCode" id="EA001201FrmSrch_ifpbntSysSeCode" value="001" style="">
+    <input type="hidden" name="sortOrder" id="EA001201FrmSrch_sortOrder" value="0" style="">
+    
+    <input type="hidden" name="searchFilterYn" id="searchFilterYn" value="N" style="">
+    <input type="hidden" name="excInsttNmSearchFilterAdd" id="excInsttNmSearchFilterAdd" value="" style="">
+    <input type="hidden" name="excInsttNmSearchFilterDel" id="excInsttNmSearchFilterDel" value="" style="">
+    <input type="hidden" name="ddtlbzNmSearchFilterAdd" id="ddtlbzNmSearchFilterAdd" value="" style="">
+    <input type="hidden" name="ddtlbzNmSearchFilterDel" id="ddtlbzNmSearchFilterDel" value="" style="">
+    
+    <!-- 2017.01.04  추가. 파일구분 파라미터 -->
+    <input type="hidden" name="fileGubun" id="EA001201FrmSrch_fileGubun" value="excel" style="">    
+    <input type="hidden" name="fileEncodingType" id="EA001201FrmSrch_fileEncodingType" value="" style="">
+    <input type="hidden" name="fileHeaderStr" id="EA001201FrmSrch_fileHeaderStr" value="" style="">
+    <input type="hidden" name="fileDataMapper" id="EA001201FrmSrch_fileDataMapper" value="" style="">
+    <input type="hidden" name="fileNm" id="EA001201FrmSrch_fileNm" value="" style="">
+    <input type="hidden" name="fieldType" id="EA001201FrmSrch_fieldType" value="" style="">
+    <input type="hidden" name="fieldType2" id="EA001201FrmSrch_fieldType2" value="" style="">
+    <input type="hidden" name="fieldType3" id="EA001201FrmSrch_fieldType3" value="" style="">
+    <input type="hidden" name="fileCellWidth" id="EA001201FrmSrch_fileCellWidth" value="" style="">
+    <input type="hidden" name="excelFileNm" id="EA001201FrmSrch_excelFileNm" value="" style="">
+    <input type="hidden" name="excelSheetNm" id="EA001201FrmSrch_excelSheetNm" value="" style="">
+    
+    <!-- 지방보조금 추가 start-->
+    <input type="hidden" name="basisCode" id="EA001201FrmSrch_basisCode" value="" style="">
+    <input type="hidden" name="wdrLcgvCode" id="EA001201FrmSrch_wdrLcgvCode" value="" style="">
+    <input type="hidden" name="labSfrndCode" id="EA001201FrmSrch_labSfrndCode" value="" style="">
+    <input type="hidden" id="EA001201_triggerKey" value="" style="">
+    <!-- 지방보조금 추가 end-->
+    
+    <!-- 2026.06.02.  검색 필터링 조건 추가 -->
+    <input type="hidden" name="selectedMultiText" id="selectedMultiText" value="" style="">
+    <input type="hidden" name="selectedMultiType" id="selectedMultiType" value="" style="">
+    <input type="hidden" name="selectedMultiSysSeCode" id="selectedMultiSysSeCode" value="" style="">
+</form>
+
+<form id="EA001201_selectVo">
+    <!-- 선택된 행 데이터 VO -->
+    <input type="hidden" name="fiscalyear" id="EA001201_fiscalyear" value="" style="">
+    <input type="hidden" name="bsnsyear" id="EA001201_bsnsyear" value="" style="">
+    <input type="hidden" name="dtlbzId" id="EA001201_dtlbzId" value="" style="">
+    <input type="hidden" name="dtlbzNm" id="EA001201_dtlbzNm" value="" style="">
+    <input type="hidden" name="ddtlbzId" id="EA001201_ddtlbzId" value="" style="">
+    <input type="hidden" name="excInsttId" id="EA001201_excInsttId" value="" style="">
+    <input type="hidden" name="excInsttNm" id="EA001201_excInsttNm" value="" style="">
+    <input type="hidden" name="hwipnBassId" id="EA001201_hwipnBassId" value="" style="">
+    <input type="hidden" name="dcsnDe" id="EA001201_dcsnDe" value="" style="">
+    <input type="hidden" name="excclcReprtType" id="EA001201_excclcReprtType" value="" style="">
+    <!-- <input type="hidden" name="taskNo"          id="EA001201_taskNo"            value=""/> --> 
+</form>
+
+<form id="EA001201_tabVo">
+    <input type="hidden" name="auditPntoutPblntfAt" id="EA001201_auditPntoutPblntfAt" value="" style="">
+    <input type="hidden" name="auditReprtPblntfAt" id="EA001201_auditReprtPblntfAt" value="" style="">
+    <input type="hidden" name="excclcRpvfrtPblntfAt" id="EA001201_excclcRpvfrtPblntfAt" value="" style="">
+    <input type="hidden" name="fnlttBlshPblntfAt" id="EA001201_fnlttBlshPblntfAt" value="" style="">
+    <input type="hidden" name="etcNtfcMatterPblntfAt" id="EA001201_etcNtfcMatterPblntfAt" value="" style="">
+    <input type="hidden" name="impprpPblntfAt" id="EA001201_impprpPblntfAt" value="" style="">
+</form>
+
+<section class="contents">
+    <article>
+        <div class="wrap service-wrap">
+        
+            
+            <!-- 타이틀 영역 시작 -->
+            <div class="titleLoca">
+                <h3 class="article">보조사업자정보공시</h3>
+                <div class="right">
+                    <nav class="location">
+                        <ol>
+                            <li>
+                                <a href="javascript:void(0)" target="_self"><img src="../../../images/sims/location_home_icon.png" alt="홈페이지"></a>
+                            </li>
+                            <li>보조사업</li>
+                            <li>보조사업목록
+                                <button type="button" class="pageLink" title="페이지선택"><img src="../../../images/sims/location_pagelink_icon.png" alt="페이지선택"></button>
+                            </li>
+                        </ol>
+                    </nav>
+                    
+                    <div class="utility">
+                        <button type="button" class="print" title="인쇄"><img src="../../../images/sims/utility_print.png"></button>
+                        <button type="button" class="share" title="공유"><img src="../../../images/sims/utility_share.png" alt="공유"></button>
+                    </div>
+                </div>
+            </div>
+            <!-- 타이틀 영역 끝 -->
+            <!-- search-table 검색영역 -->
+            <!-- 검색후엔 after addClass & 모바일상태에서 팝업형태는 on addClass 처리함 -->
+            <div class="search-table staType on">
+                <!-- 모바일 환경에서 나오는 추가조건영역 -->
+                <div class="upSt">
+                    <!-- 모바일 환경에서 나오는 추가조건 제목 -->
+                    <div class="moTitleWrap white">
+                        <header class="popup">
+                            조회조건
+                            <button type="button" class="close"><span class="behind">창닫기</span></button>
+                        </header>
+                    </div>
+                    <!-- //모바일 환경에서 나오는 추가조건 제목 -->
+                    <!-- 초기 검색영역 -->
+                    <div class="detailSearch column">
+                        <div class="component comHalf">
+                            <label for="EA001201Frm_bsnsyear" class="th">사업연도</label>
+                            <div class="td">
+                                <select class="sel" id="EA001201Frm_bsnsyear" name="bsnsyear">
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="component comHalf" id="displayFsyr">
+                            <label for="EA001201Frm_fsyr" class="th">회계연도</label>
+                            <div class="td">
+                                <select class="sel" id="EA001201Frm_fsyr" name="fsyr">
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="component">
+                            <label for="EA001201Frm_basisCode" class="th">사업구분</label>
+                            <div class="td">
+                                <select class="sel" id="EA001201Frm_basisCode">
+                                    <option value="1">국고보조사업</option>
+                                    <option value="2">지방보조사업</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="component" id="jrsdComponent">
+                            <label for="EA001201Frm_jrsdCode" class="th">중앙관서</label>
+                            <div class="td">
+                                <select class="sel wFull" id="EA001201Frm_jrsdCode" name="jrsd">
+                                    <option value="">전체</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="component" id="wdrComponent" style="display:none;">
+                            <label class="th">자치단체</label>
+                            <div class="td">
+                                <span class="term type2">
+                                    <select class="sel" id="EA001201Frm_wdrLcgvCode" title="시도">
+                                        <option value="">전체</option>
+                                    </select>
+                                    <select class="sel" id="EA001201Frm_labSfrndCode" title="시군구">
+                                        <option value="">전체</option>
+                                    </select>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="command">
+                        <button type="button" class="largeBtn black conMore on" title="닫기"><span class="icon plus"></span> 추가조건</button>
+                        <button type="button" class="largeBtn fill black searchButton" onclick="f_search()"><span class="icon searchW"></span>조회</button>
+                    </div>
+                    <!-- //초기 검색영역 -->
+                    <!-- 추가조건 영역 -->
+                    <div class="searchResultList searchMore">
+                        <div class="detailSearch" id="displayIfpbntSysSeCode">
+                            <div class="component">
+                                <label class="th">공시구분</label>
+                                <div class="td">
+                                    <div class="cate3-select">
+                                        <div class="cate-list">
+                                            <ul class="inputType-check" id="ulIfpbntSysSeCode">
+                                                <!--<li><label><input type="radio" name="status1" />일반보조사업</label></li>
+                                                <li><label><input type="radio" name="status1" />창업진흥원</label></li>
+                                                <li><label><input type="radio" name="status1" />사회복지시설</label></li>
+                                                <li><label><input type="radio" name="status1" />보육시설</label></li> -->
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="detailSearch">
+                            <div class="component">
+                                <label class="th">공시일</label>
+                                <div class="td">
+                                    <span class="term">
+                                        <input type="text" class="useDatepicker dateFrom" id="EA001201Frm_dcsnBeginDe" title="공시일 시작일 yyyy-mm-dd" style="">
+                                        ~
+                                        <input type="text" class="useDatepicker dateTo" id="EA001201Frm_dcsnEndDe" title="공시일 종료일 yyyy-mm-dd" style="">
+                                    </span>
+                                    <div class="cal-select">
+                                        <div class="cate-list">
+                                            <ul class="inputType-check">
+                                                <li><label><input type="radio" name="calendar" onclick="f_setDcsnDe('w')" style="">1주</label></li>
+                                                <li><label><input type="radio" name="calendar" onclick="f_setDcsnDe('m')" style="">1개월</label></li>
+                                                <li><label><input type="radio" name="calendar" onclick="f_setDcsnDe('y')" style="">1년</label></li>
+                                                <li><label><input type="radio" name="calendar" onclick="f_setDcsnDe('c_y')" style="">현 년도</label></li>
+                                                <li><label><input type="radio" name="calendar" onclick="f_setDcsnDe('b_y')" style="">전 년도</label></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="detailSearch">
+                            <div class="component">
+                                <label for="EA001201Frm_excInsttNm" class="th">수행기관명</label>
+                                <div class="td">
+                                    <div class="afterSearch">
+                                        <div class="complexInput">
+                                            <input type="text" id="EA001201Frm_excInsttNm" style="">
+                                            <div class="sort">
+                                                <label><input type="radio" name="sort1" value="1" checked="" style="">포함</label>
+                                                <label><input type="radio" name="sort1" value="2" style="">제외</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="component">
+                                <label for="EA001201Frm_ddtlbzNm" class="th">보조사업명</label>
+                                <div class="td">
+                                    <div class="afterSearch">
+                                        <div class="complexInput">
+                                            <input type="text" id="EA001201Frm_ddtlbzNm" style="">
+                                            <div class="sort">
+                                                <label><input type="radio" name="sort2" value="1" checked="" style="">포함</label>
+                                                <label><input type="radio" name="sort2" value="2" style="">제외</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="detailSearch" id="displaySearchFilter">
+                            <div class="component wFull">
+                                 <!-- 시작 //// 라인만 있는 탭 타입 -->
+                                <nav class="tabLine typeLine item8">
+                                    <ul>
+                                        <li id="acttab0" class="on" data-target="0"><a href="javascript:void(0)">서비스 주제</a></li>
+                                        <li id="acttab1" data-target="1"><a href="javascript:void(0)">생애주기</a></li>
+                                        <li id="acttab2" data-target="2"><a href="javascript:void(0)">가구구성유형</a></li>
+                                        <li id="acttab3" data-target="3"><a href="javascript:void(0)">경제활동</a></li>
+                                        <li id="acttab4" data-target="4"><a href="javascript:void(0)">소득기준</a></li>
+                                        <li id="acttab5" data-target="5"><a href="javascript:void(0)">교육단위</a></li>
+                                        <li id="acttab6" data-target="6"><a href="javascript:void(0)">기업규모</a></li>
+                                        <li id="acttab7" data-target="7"><a href="javascript:void(0)">공시기준</a></li>
+                                     </ul>
+                                </nav>
+                                <!-- 탭1:서비스주체 -->
+                                <div class="tabLinePage tabLine_0 on">
+                                    <h4 class="behind">서비스 주제</h4>
+                                    <div class="searchGroupBox">
+                                        <ul class="df">
+                                            
+                                                <li>
+                                                    <label for="checkEducType2_000000000001">
+                                                        <input type="checkbox" name="checkEducType2" id="checkEducType2_000000000001" value="000000000001" class="searchFilter" style=""> 행정/통일/외교 
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkEducType2_000000000002">
+                                                        <input type="checkbox" name="checkEducType2" id="checkEducType2_000000000002" value="000000000002" class="searchFilter" style=""> 안전 보장
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkEducType2_000000000003">
+                                                        <input type="checkbox" name="checkEducType2" id="checkEducType2_000000000003" value="000000000003" class="searchFilter" style=""> 교육 보장
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkEducType2_000000000004">
+                                                        <input type="checkbox" name="checkEducType2" id="checkEducType2_000000000004" value="000000000004" class="searchFilter" style=""> 문화활동
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkEducType2_000000000005">
+                                                        <input type="checkbox" name="checkEducType2" id="checkEducType2_000000000005" value="000000000005" class="searchFilter" style=""> 관광/휴양활동
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkEducType2_000000000006">
+                                                        <input type="checkbox" name="checkEducType2" id="checkEducType2_000000000006" value="000000000006" class="searchFilter" style=""> 종교활동
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkEducType2_000000000007">
+                                                        <input type="checkbox" name="checkEducType2" id="checkEducType2_000000000007" value="000000000007" class="searchFilter" style=""> 환경향상 
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkEducType2_000000000008">
+                                                        <input type="checkbox" name="checkEducType2" id="checkEducType2_000000000008" value="000000000008" class="searchFilter" style=""> 사회복지향상
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkEducType2_000000000009">
+                                                        <input type="checkbox" name="checkEducType2" id="checkEducType2_000000000009" value="000000000009" class="searchFilter" style=""> 보훈향상
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkEducType2_000000000010">
+                                                        <input type="checkbox" name="checkEducType2" id="checkEducType2_000000000010" value="000000000010" class="searchFilter" style=""> 고용안정
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkEducType2_000000000011">
+                                                        <input type="checkbox" name="checkEducType2" id="checkEducType2_000000000011" value="000000000011" class="searchFilter" style=""> 주거안정
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkEducType2_000000000012">
+                                                        <input type="checkbox" name="checkEducType2" id="checkEducType2_000000000012" value="000000000012" class="searchFilter" style=""> 보건/의료 
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkEducType2_000000000013">
+                                                        <input type="checkbox" name="checkEducType2" id="checkEducType2_000000000013" value="000000000013" class="searchFilter" style=""> 1차 산업지원
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkEducType2_000000000014">
+                                                        <input type="checkbox" name="checkEducType2" id="checkEducType2_000000000014" value="000000000014" class="searchFilter" style=""> 산업/에너지지원
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkEducType2_000000000015">
+                                                        <input type="checkbox" name="checkEducType2" id="checkEducType2_000000000015" value="000000000015" class="searchFilter" style=""> 국토개발지원
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkEducType2_000000000016">
+                                                        <input type="checkbox" name="checkEducType2" id="checkEducType2_000000000016" value="000000000016" class="searchFilter" style=""> 교통/물류진흥
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkEducType2_000000000017">
+                                                        <input type="checkbox" name="checkEducType2" id="checkEducType2_000000000017" value="000000000017" class="searchFilter" style=""> 방송/통신진흥
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkEducType2_000000000018">
+                                                        <input type="checkbox" name="checkEducType2" id="checkEducType2_000000000018" value="000000000018" class="searchFilter" style=""> 과학기술진흥
+                                                    </label>
+                                                </li>
+                                            
+                                        </ul>
+                                    </div>
+                                </div>
+                                <!-- //탭1:서비스주체 -->
+                                <!-- 탭2:생애주기 -->
+                                <div class="tabLinePage tabLine_1">
+                                    <h4 class="behind">생애주기</h4>
+                                    <div class="searchGroupBox">
+                                        <ul class="df">
+                                            
+                                                <li>
+                                                    <label for="checkLfcy_000000000046">
+                                                        <input type="checkbox" name="checkLfcy" id="checkLfcy_000000000046" value="000000000046" class="searchFilter" style=""> 영‧유아(0~5세)
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkLfcy_000000000047">
+                                                        <input type="checkbox" name="checkLfcy" id="checkLfcy_000000000047" value="000000000047" class="searchFilter" style=""> 아동(6~12세)
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkLfcy_000000000048">
+                                                        <input type="checkbox" name="checkLfcy" id="checkLfcy_000000000048" value="000000000048" class="searchFilter" style=""> 청소년(13~18세)
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkLfcy_000000000049">
+                                                        <input type="checkbox" name="checkLfcy" id="checkLfcy_000000000049" value="000000000049" class="searchFilter" style=""> 청년(19~29세)
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkLfcy_000000000050">
+                                                        <input type="checkbox" name="checkLfcy" id="checkLfcy_000000000050" value="000000000050" class="searchFilter" style=""> 중년(30~49세)
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkLfcy_000000000051">
+                                                        <input type="checkbox" name="checkLfcy" id="checkLfcy_000000000051" value="000000000051" class="searchFilter" style=""> 장년(50~64세)
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkLfcy_000000000052">
+                                                        <input type="checkbox" name="checkLfcy" id="checkLfcy_000000000052" value="000000000052" class="searchFilter" style=""> 노년(65세 이상)
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkLfcy_000000000108">
+                                                        <input type="checkbox" name="checkLfcy" id="checkLfcy_000000000108" value="000000000108" class="searchFilter" style=""> 연령대무관
+                                                    </label>
+                                                </li>
+                                            
+                                        </ul>
+                                    </div>
+                                </div>
+                                <!-- 탭2:생애주기 -->
+                                <!-- 탭3:가구구성유형 -->
+                                <div class="tabLinePage tabLine_2">
+                                    <h4 class="behind">가구구성유형</h4>
+                                    <div class="searchGroupBox">
+                                        <ul class="df">
+                                            
+                                                <li>
+                                                    <label for="checkFmlyType_000000000088">
+                                                        <input type="checkbox" name="checkFmlyType" id="checkFmlyType_000000000088" value="000000000088" class="searchFilter" style=""> 다문화 가족
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkFmlyType_000000000089">
+                                                        <input type="checkbox" name="checkFmlyType" id="checkFmlyType_000000000089" value="000000000089" class="searchFilter" style=""> 이주배경 청소년
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkFmlyType_000000000090">
+                                                        <input type="checkbox" name="checkFmlyType" id="checkFmlyType_000000000090" value="000000000090" class="searchFilter" style=""> 새터민가정
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkFmlyType_000000000091">
+                                                        <input type="checkbox" name="checkFmlyType" id="checkFmlyType_000000000091" value="000000000091" class="searchFilter" style=""> 한부모가정
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkFmlyType_000000000092">
+                                                        <input type="checkbox" name="checkFmlyType" id="checkFmlyType_000000000092" value="000000000092" class="searchFilter" style=""> 신혼부부
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkFmlyType_000000000093">
+                                                        <input type="checkbox" name="checkFmlyType" id="checkFmlyType_000000000093" value="000000000093" class="searchFilter" style=""> 임산부·영유아가정
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkFmlyType_000000000094">
+                                                        <input type="checkbox" name="checkFmlyType" id="checkFmlyType_000000000094" value="000000000094" class="searchFilter" style=""> 소년‧소녀가장
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkFmlyType_000000000095">
+                                                        <input type="checkbox" name="checkFmlyType" id="checkFmlyType_000000000095" value="000000000095" class="searchFilter" style=""> 조손가정
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkFmlyType_000000000101">
+                                                        <input type="checkbox" name="checkFmlyType" id="checkFmlyType_000000000101" value="000000000101" class="searchFilter" style=""> 장기치료·요양환자
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkFmlyType_000000000102">
+                                                        <input type="checkbox" name="checkFmlyType" id="checkFmlyType_000000000102" value="000000000102" class="searchFilter" style=""> 장애인
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkFmlyType_000000000103">
+                                                        <input type="checkbox" name="checkFmlyType" id="checkFmlyType_000000000103" value="000000000103" class="searchFilter" style=""> 보훈대상자
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkFmlyType_000000000104">
+                                                        <input type="checkbox" name="checkFmlyType" id="checkFmlyType_000000000104" value="000000000104" class="searchFilter" style=""> 1인(독거)가정
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkFmlyType_000000000114">
+                                                        <input type="checkbox" name="checkFmlyType" id="checkFmlyType_000000000114" value="000000000114" class="searchFilter" style=""> 가구유형 무관
+                                                    </label>
+                                                </li>
+                                            
+                                        </ul>
+                                    </div>
+                                </div>
+                                <!-- 탭3:가구구성유형 -->
+                                <!-- 탭4:경제활동 -->
+                                <div class="tabLinePage tabLine_3">
+                                    <h4 class="behind">경제활동</h4>
+                                    <div class="searchGroupBox">
+                                        <ul class="df">
+                                            
+                                                <li>
+                                                    <label for="checkBizExcType_000000000063">
+                                                        <input type="checkbox" name="checkBizExcType" id="checkBizExcType_000000000063" value="000000000063" class="searchFilter" style=""> 사회초년생
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkBizExcType_000000000064">
+                                                        <input type="checkbox" name="checkBizExcType" id="checkBizExcType_000000000064" value="000000000064" class="searchFilter" style=""> 근로자‧직장인
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkBizExcType_000000000065">
+                                                        <input type="checkbox" name="checkBizExcType" id="checkBizExcType_000000000065" value="000000000065" class="searchFilter" style=""> 농업인
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkBizExcType_000000000066">
+                                                        <input type="checkbox" name="checkBizExcType" id="checkBizExcType_000000000066" value="000000000066" class="searchFilter" style=""> 어업인
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkBizExcType_000000000067">
+                                                        <input type="checkbox" name="checkBizExcType" id="checkBizExcType_000000000067" value="000000000067" class="searchFilter" style=""> 임업인
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkBizExcType_000000000068">
+                                                        <input type="checkbox" name="checkBizExcType" id="checkBizExcType_000000000068" value="000000000068" class="searchFilter" style=""> 축산업인
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkBizExcType_000000000069">
+                                                        <input type="checkbox" name="checkBizExcType" id="checkBizExcType_000000000069" value="000000000069" class="searchFilter" style=""> 취업모
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkBizExcType_000000000070">
+                                                        <input type="checkbox" name="checkBizExcType" id="checkBizExcType_000000000070" value="000000000070" class="searchFilter" style=""> 실직자‧구직자
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkBizExcType_000000000071">
+                                                        <input type="checkbox" name="checkBizExcType" id="checkBizExcType_000000000071" value="000000000071" class="searchFilter" style=""> 창업자
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkBizExcType_000000000072">
+                                                        <input type="checkbox" name="checkBizExcType" id="checkBizExcType_000000000072" value="000000000072" class="searchFilter" style=""> 자영업자
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkBizExcType_000000000110">
+                                                        <input type="checkbox" name="checkBizExcType" id="checkBizExcType_000000000110" value="000000000110" class="searchFilter" style=""> 경제활동무관
+                                                    </label>
+                                                </li>
+                                            
+                                        </ul>
+                                    </div>
+                                </div>
+                                <!-- 탭4:경제활동 -->
+                                <!-- 탭5:소득기준 -->
+                                <div class="tabLinePage tabLine_4">
+                                    <h4 class="behind">소득기준</h4>
+                                    <div class="searchGroupBox">
+                                        <ul class="df">
+                                            
+                                                <li>
+                                                    <label for="checkEncomeType_000000000055">
+                                                        <input type="checkbox" name="checkEncomeType" id="checkEncomeType_000000000055" value="000000000055" class="searchFilter" style=""> 기초생활보호 대상자
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkEncomeType_000000000056">
+                                                        <input type="checkbox" name="checkEncomeType" id="checkEncomeType_000000000056" value="000000000056" class="searchFilter" style=""> 차상위계층
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkEncomeType_000000000057">
+                                                        <input type="checkbox" name="checkEncomeType" id="checkEncomeType_000000000057" value="000000000057" class="searchFilter" style=""> 차차상위계층
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkEncomeType_000000000058">
+                                                        <input type="checkbox" name="checkEncomeType" id="checkEncomeType_000000000058" value="000000000058" class="searchFilter" style=""> 소득하위 50%이하
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkEncomeType_000000000059">
+                                                        <input type="checkbox" name="checkEncomeType" id="checkEncomeType_000000000059" value="000000000059" class="searchFilter" style=""> 소득하위 70%이하
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkEncomeType_000000000060">
+                                                        <input type="checkbox" name="checkEncomeType" id="checkEncomeType_000000000060" value="000000000060" class="searchFilter" style=""> 긴급지원대상자
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkEncomeType_000000000061">
+                                                        <input type="checkbox" name="checkEncomeType" id="checkEncomeType_000000000061" value="000000000061" class="searchFilter" style=""> 기타취약계층
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkEncomeType_000000000109">
+                                                        <input type="checkbox" name="checkEncomeType" id="checkEncomeType_000000000109" value="000000000109" class="searchFilter" style=""> 소득무관
+                                                    </label>
+                                                </li>
+                                                
+                                        </ul>
+                                    </div>
+                                </div>
+                                <!-- 탭5:소득기준 -->
+                                <!-- 탭6:교육단위 -->
+                                <div class="tabLinePage tabLine_5">
+                                    <h4 class="behind">교육단위</h4>
+                                    <div class="searchGroupBox">
+                                        <ul class="df">
+                                            
+                                                <li>
+                                                    <label for="checkEducType_000000000074">
+                                                        <input type="checkbox" name="checkEducType" id="checkEducType_000000000074" value="000000000074" class="searchFilter" style=""> 어린이집·유치원생
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkEducType_000000000075">
+                                                        <input type="checkbox" name="checkEducType" id="checkEducType_000000000075" value="000000000075" class="searchFilter" style=""> 초등학생
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkEducType_000000000076">
+                                                        <input type="checkbox" name="checkEducType" id="checkEducType_000000000076" value="000000000076" class="searchFilter" style=""> 중학생
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkEducType_000000000077">
+                                                        <input type="checkbox" name="checkEducType" id="checkEducType_000000000077" value="000000000077" class="searchFilter" style=""> 고등학생
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkEducType_000000000078">
+                                                        <input type="checkbox" name="checkEducType" id="checkEducType_000000000078" value="000000000078" class="searchFilter" style=""> 대학생
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkEducType_000000000079">
+                                                        <input type="checkbox" name="checkEducType" id="checkEducType_000000000079" value="000000000079" class="searchFilter" style=""> 대학원생
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkEducType_000000000080">
+                                                        <input type="checkbox" name="checkEducType" id="checkEducType_000000000080" value="000000000080" class="searchFilter" style=""> 일반인 등 기타
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkEducType_000000000111">
+                                                        <input type="checkbox" name="checkEducType" id="checkEducType_000000000111" value="000000000111" class="searchFilter" style=""> 교육단위 무관
+                                                    </label>
+                                                </li>
+                                            
+                                        </ul>
+                                    </div>
+                                </div>
+                                <!-- 탭6:소득기준 -->
+                                <!-- 탭7:기업규모 -->
+                                <div class="tabLinePage tabLine_6">
+                                    <h4 class="behind">기업규모</h4>
+                                    <div class="searchGroupBox">
+                                        <ul class="df">
+                                            
+                                                <li>
+                                                    <label for="checkCompanyType_000000000082">
+                                                        <input type="checkbox" name="checkCompanyType" id="checkCompanyType_000000000082" value="000000000082" class="searchFilter" style=""> 대기업
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkCompanyType_000000000083">
+                                                        <input type="checkbox" name="checkCompanyType" id="checkCompanyType_000000000083" value="000000000083" class="searchFilter" style=""> 중견기업
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkCompanyType_000000000084">
+                                                        <input type="checkbox" name="checkCompanyType" id="checkCompanyType_000000000084" value="000000000084" class="searchFilter" style=""> 중기업
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkCompanyType_000000000085">
+                                                        <input type="checkbox" name="checkCompanyType" id="checkCompanyType_000000000085" value="000000000085" class="searchFilter" style=""> 소기업
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkCompanyType_000000000086">
+                                                        <input type="checkbox" name="checkCompanyType" id="checkCompanyType_000000000086" value="000000000086" class="searchFilter" style=""> 소상공업(자영업)
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkCompanyType_000000000112">
+                                                        <input type="checkbox" name="checkCompanyType" id="checkCompanyType_000000000112" value="000000000112" class="searchFilter" style=""> 비영리단체 기타
+                                                    </label>
+                                                </li>
+                                            
+                                                <li>
+                                                    <label for="checkCompanyType_000000000113">
+                                                        <input type="checkbox" name="checkCompanyType" id="checkCompanyType_000000000113" value="000000000113" class="searchFilter" style=""> 기업단체종류 무관
+                                                    </label>
+                                                </li>
+                                                
+                                        </ul>
+                                    </div>
+                                </div>
+                                <!-- 탭7:기업규모 -->
+                                <!-- 탭8:공시기준 -->
+                                <div class="tabLinePage tabLine_7">
+                                    <h4 class="behind">공시기준</h4>
+                                    <div class="searchGroupBox">
+                                        <ul class="df">
+                                            <li class="w-210">
+                                                <label for="ifpbntSysSeCode_000" class="syssecode-label">
+                                                    <input type="checkbox" name="ifpbntSysSeCodeChk" id="ifpbntSysSeCode_000" value="000" class="searchFilterSysSeCode syssecode-checkbox" style="">
+                                                    <span class="syssecode-span">
+                                                        <span>국고보조금(전체사업)</span>
+                                                        <span class="f-12">* 국비 1천만원 이상</span>
+                                                    </span>
+                                                    
+                                                </label>
+                                            </li>
+                                            <li class="w-270">
+                                                <label for="ifpbntSysSeCode_006" class="syssecode-label">
+                                                    <input type="checkbox" name="ifpbntSysSeCodeChk" id="ifpbntSysSeCode_006" value="006" class="searchFilterSysSeCode syssecode-checkbox" style=""> 
+                                                    <span class="syssecode-span">
+                                                        <span>국고보조금(매칭사업)</span>
+                                                        <span class="f-12">* 국비 1천만원 미만, 지방비 5백만원 이상</span>
+                                                    </span>
+                                                </label>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <!-- 탭8:공시기준 -->
+                                <!-- 끝 -->
+                            </div>
+                        </div>
+                    </div>
+                    <!-- //추가조건 영역 -->
+                    <!-- 검색결과영역 -->
+                    <div class="searchResultList afterSearch">
+                        <ul class="searchGroup" id="selectedText">
+                            <!-- <li><span class="tag blue">포</span> 지원사업 <button class="roundCloseBtn"></button></li>
+                            <li><span class="tag orange">제</span>중장년<button class="roundCloseBtn"></button></li>
+                            <li>청년(19~29세)<button class="roundCloseBtn"></button></li>
+                            <li>장년(50~64세)<button class="roundCloseBtn"></button></li> -->
+                        </ul>
+                        <div class="resetArea">
+                            <label for="searchFilterChk"><input type="checkbox" id="searchFilterChk" name="searchFilterChk" style=""> 결과내검색</label>
+                            <button type="button" class="largeBtn black btnSearchHelp"><span class="icon searchHelp onlyPc"></span>검색도움말</button>
+                            <button type="button" class="largeBtn black resetButton" id="directReset"><span class="icon reset"></span>초기화</button>
+                        </div>
+                        <button type="button" class="middleBtn lightgray round setSearchBtn"><span class="icon setting"></span><span class="behind">보기설정</span></button>
+                    </div>
+                    <!-- 모바일-추가검색환경에서만 보이는 조회버튼 -->
+                    <button type="button" class="largeBtn fill black searchButton" onclick="f_search()"><span class="icon searchW"></span>조회</button>
+                    <!-- //모바일-추가검색환경에서만 보이는 조회버튼 -->
+                    
+                    <!-- 검색결과영역 -->
+                </div>
+            </div>
+            <!-- //search-table 검색영역 -->
+            <div class="notiBox">
+                <button type="button" class="guideClose"><span class="behind">검색도움말 닫기</span></button>
+                <div class="notiCon">
+                    <p class="bang black">보조사업자 정보공시는 보조사업을 수행한 해당 보조사업자가 작성한 사항이며, <br>국고보조사업, 지방보조사업으로 구분 조회 가능합니다.</p>
+                    <p class="bang black">지방보조사업에 대한 정보공시는 2024 회계연도부터 조회가 가능하며, 전일자 기준으로 정보가 제공됩니다.</p>
+                    <!--<h6 class="findBookmark">조회조건 바로가기</h6>    
+                    <ul class="dot findBiz">
+                         <li><a href="javascript:void(0);" class="linkLine" onclick="f_showAddCondition('EA001201Frm_ifpbntSysSeCode')">보조사업자 구분으로 찾기</a></li>
+                         <li><a href="javascript:void(0);" class="linkLine" onclick="f_showAddCondition('EA001201Frm_ddtlbzNm')">보조사업명으로 찾기</a></li>
+                         <li><a href="javascript:void(0);" class="linkLine" onclick="f_showAddCondition('EA001201Frm_excInsttNm')">수행기관명으로 찾기</a></li>
+                         <li><a href="javascript:void(0);" class="linkLine" onclick="f_showAddCondition('EA001201Frm_dcsnBeginDe')">공시일자로 찾기</a></li>
+                         <li><a href="javascript:void(0);" class="linkLine" onclick="f_showAddCondition('EA001201Frm_basisCode')">지방자치단체로 찾기</a></li>
+                    </ul>  -->
+                    <h6 class="findObject">정보공시 대상</h6>
+                    <ul class="hyphen">
+                        <li>보조사업자 정보공시는 다음의 정보를 보조사업별로 확인 가능합니다.</li>
+                    </ul>
+                    <ul class="dot mgt15">
+                            <li> 보조금교부신청서</li>
+                            <li> 수입·지출내역</li>
+                            <li> 정산보고서를 포함한 실적보고서</li>
+                            <li> 정산 검증보고서</li>
+                            <li> 재무제표 또는 결산서</li>
+                            <li> 회계·감사보고서</li>
+                            <li> 감사지적사항</li>        
+                            <li> 중요재산 현황</li>
+                            <li> 집행명세서</li>
+                        </ul>
+                </div>
+                <div class="descCon">
+                    <div class="titleSort between">
+                            <h6 class="helpTit">화면 도움말</h6>
+                            <ul class="typeLine">
+                                <!-- <li><button type="button" class="link">상세 도움말</button></li> -->
+                                <li><button type="button" class="link" onclick="f_openJA005101(this)">보조금 용어사전</button></li>
+                            </ul>
+                        </div>
+                        <div class="tableWrap tableType rowType">
+                            
+                            <div class="titleSort between">
+                                <h6 class="tblTit">기본 조회 조건</h6>
+                                <p class="req"><span class="reqMark">*</span>필수 조회 조건</p>
+                            </div>
+                            <table class="view-table">
+                               <caption><span class="behind">보조사업자공시 목록 기본 조회 조건 - 회계연도, 사업연도, 공시근거, 중앙관서, 지방자치단체로 구성</span></caption>
+                               <colgroup>
+                                   <col style="width:25%">
+                                   <col style="width:75%">
+                               </colgroup>
+                               <tbody>
+                                   <tr>
+                                       <th scope="row">회계연도<span class="reqMark">*<span class="behind">필수 조회 조건</span></span></th>
+                                       <td>연단위로 사업 귀속 회계연도 지정</td>
+                                   </tr>                                
+                                   <tr>
+                                       <th scope="row">사업연도<span class="reqMark">*<span class="behind">필수 조회 조건</span></span></th>
+                                       <td>연단위로 사업연도 지정</td>
+                                   </tr>
+                                   <tr>
+                                       <th scope="row">사업구분<span class="reqMark">*<span class="behind">필수 조회 조건</span></span></th>
+                                       <td>국고보조사업, 지방보조사업 중 1개 선택 지정
+                                        <!-- 공시 근거 법률 1개 선택
+                                       <p class="note">※ 국고보조사업-보조금법, 지방보조사업-지방보조금법</p> -->
+                                       </td>
+                                   </tr>
+                                   <tr>
+                                       <th scope="row">중앙관서</th>
+                                       <td>(국고보조사업) 중앙관서 중 1개 선택 지정</td>
+                                   </tr>
+                                   <tr>
+                                    <th scope="row">지방자치단체</th>
+                                    <td>(지방보조사업) 지방자치단체 중 1개 선택 지정</td>
+                                </tr>
+                                </tbody>
+                           </table>
+                        </div>
+                        
+                      <div class="tableWrap tableType rowType">
+                            
+                            <div class="titleSort between">
+                                <h6 class="tblTit">추가 조회 조건</h6>
+                            </div>
+                            <table class="view-table">
+                               <caption><span class="behind">보조사업자공시 목록 추가 조회 조건 - 보조사업자구분, 공시일, 수행기관명, 보조사업명으로 구성</span></caption>
+                               <colgroup>
+                                   <col style="width:25%">
+                                   <col style="width:75%">
+                               </colgroup>
+                               <tbody>
+                                   <tr>
+                                       <th scope="row">보조사업자구분</th>
+                                       <td>
+                                        보조사업자 구분 선택
+                                        <p class="note">※ 일반보조사업, 창업진흥원, 사회복지시설, 보육시설</p>
+                                    </td>
+                                   </tr>
+                                   <tr>
+                                       <th scope="row">공시일</th>
+                                       <td>
+                                        보조사업자가 공시자료를 등록한 공시일자 지정
+                                        <!--p class="note">※ 기관자체는 온라인 신청 접수 불가능</p-->
+                                       </td>
+                                   </tr>
+                                   <tr>
+                                       <th scope="row">수행기관명</th>
+                                       <td>
+                                            공시 대상 보조사업의 수행기관명 범위 키워드 지정
+                                            <!--p class="note">※ 사업주제 16가지와 차이가 있음. 회계기준 사업분야.</p-->
+                                       </td>
+                                   </tr>
+                                   <tr>
+                                       <th scope="row">보조사업명</th>
+                                       <td>
+                                            공시 대상 보조사업의 사업명 범위 키워드 지정
+                                            <!--p class="note">※ 마감임박 공모을 빠르게 찾을 수 있으며, 3일이내 마감 건은 [마감임박공고}에서도 확인 가능</p-->
+                                       </td>
+                                   </tr>
+                               </tbody>
+                           </table>
+                        </div>  
+                        <ul class="dot">
+                            <li>키워드 조건은 결과내검색으로 "포함", "제외" 옵션을 지원합니다.</li>
+                        </ul>
+                </div>
+            </div>
+
+
+            <div class="titleSort between" style="display:none;">
+                <h4 class="folderTit">정보공시 대상<span class="countNum" id="total_num">0</span>개</h4>
+                
+                <dl class="typeDisc">
+                    <dt>단위</dt>
+                    <dd>천원</dd>
+                    <div class="moView">
+                        <button type="button" class="middleBtn lightgray round settingBtn"><span class="icon setting"></span>보기설정</button>
+                        <div class="upSt">
+                            <div class="moTitleWrap white">
+                                <header class="popup">
+                                    보기설정
+                                   <button type="button" class="close"><span class="behind">창닫기</span></button>
+                               </header>
+                            </div>
+                            <dl class="typeDisc">
+                                <dt>보기</dt>
+                                <dd class="df">
+                                    <select id="sbxGridDiv" name="" class="sel" title="보기방식">
+                                        <option value="0">카드형</option>
+                                        <option value="1">표형</option>
+                                    </select>
+                                    <select id="sbxGridPerPageSize" name="" class="sel" title="노출개수">
+                                        <option value="10" selected="selected">10개씩</option>
+                                        <option value="20">20개씩</option>
+                                        <option value="30">30개씩</option>
+                                        <option value="40">40개씩</option>
+                                        <option value="50">50개씩</option>
+                                    </select>
+                                    <select id="sbxGirdOrdby" name="" class="sel" title="정렬방식">
+<!--                                        <option value='0'>기본정렬</option> -->
+                                        <option value="1">공시일순</option>
+                                        <option value="2">보조금액순</option>
+                                        <option value="3">사업명순</option>
+                                    </select>
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                    <button type="button" class="middleBtn gray fill" id="EA001201_btnFiledown" title="정보공시 목록">
+                        <span class="icon saveW"></span>
+                        <span class="behind">파일</span> 저장
+                    </button>
+                </dl>
+            </div>
+            <div class="tableWrap cardType" id="tableWrapType" style="display:none;">
+                <div id="tableWrap"></div>
+                <!-- <button type="button" class="roudnMoreBtn" id="roudnMoreBtn"><span id="roudnMoreBtn_text">더보기(1/3)</span> <span class="icon more"></span></button> -->
+            </div>
+            <div class="btnArea center roudnMoreBtn" style="display:none;">                    
+                <button type="button" class="roudnMoreBtn" id="roudnMoreBtn"><span id="roudnMoreBtn_text">더보기(1/3)</span> <span class="icon more"></span></button>
+            </div>
+            <div class="h-content" id="EA001201_noData" style="display:none;">
+                <dl class="con-type1">
+                    <div class="noDataBox triangle">
+                        <div class="txt">조회된 데이터가 없습니다.</div>
+                        <!--  <div class="note" id="EA001201_noData_text">지방보조사업에 대한 정보공시는 지방보조금시스템이 전면 개통하는 2024 회계연도(2025년)부터 시행 예정입니다.</div> -->
+                    </div>
+                </dl>
+            </div>
+        </div>
+    </article>
+
+</section>
+</body></html>
