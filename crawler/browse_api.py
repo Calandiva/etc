@@ -132,17 +132,17 @@ def run(mode="api"):
         # 지방(basisCode=2)로 전환 후 연도 세팅하고 f_search 직접 호출
         for basis_try in ["2","1"]:
             try:
-                page.evaluate("""(y)=>{
+                page.evaluate("""(a)=>{
+                  const [y, basis] = a;
                   const setv=(sel,v)=>{const el=document.querySelector(sel); if(el){el.value=v; el.dispatchEvent(new Event('change',{bubbles:true}));}};
-                  // 국고/지방 라디오
-                  document.querySelectorAll('input[name*=basisCode]').forEach(r=>{if(r.value===arguments[1]){r.checked=true;r.dispatchEvent(new Event('click',{bubbles:true}));}});
-                  setv('#EA001201Frm_basisCode', arguments[1]);
+                  document.querySelectorAll('input[name*=basisCode]').forEach(r=>{if(r.value===basis){r.checked=true;r.dispatchEvent(new Event('click',{bubbles:true}));}});
+                  setv('#EA001201Frm_basisCode', basis);
                   setv('#EA001201Frm_fsyr', String(y)); setv('#EA001201Frm_bsnsyear', String(y));
-                  setv('select[id$=_fsyr]', String(y));
-                }""", years[0], basis_try)
-                page.wait_for_timeout(1200)
+                  setv('select[id$=_fsyr]', String(y)); setv('select[id$=_bsnsyear]', String(y));
+                }""", [years[0], basis_try])
+                page.wait_for_timeout(1500)
                 page.evaluate("()=>{ if(typeof f_search==='function') f_search(); }")
-                page.wait_for_timeout(4000)
+                page.wait_for_timeout(5000)
             except Exception as e:
                 real.setdefault("errors",[]).append(f"{basis_try}:{e}")
         (RB/"real-request.json").write_text(json.dumps(real,ensure_ascii=False,indent=1)[:400000],encoding="utf-8")
