@@ -297,6 +297,48 @@ footer.site{border-top:1px solid var(--line);color:var(--muted);font-size:12px;p
     <div class="btnrow"><button class="btn" id="runPaste">분석 실행</button></div>
   </div>
 
+  <details class="rule" id="crawlPanel" style="margin-top:16px">
+    <summary><span class="chip on">서버 수집</span>
+      <span class="rname">포털에서 개별 보조사업 공시 직접 수집 (Vercel 배포 시)</span></summary>
+    <div class="rbody">
+      <p style="margin:12px 0 10px">보조금 공시는 <b>사업마다 따로</b> 게시되므로, 목록을 넘기며 각 사업의 상세 집행내역까지
+      수집해야 사업별 분석이 됩니다. 이 저장소를 Vercel에 배포하면 Python 함수가 그 일을 합니다.</p>
+      <div class="callout" style="margin-bottom:14px">
+        <b>요청 규격은 브라우저에서 그대로 복사해 오세요.</b> 공시 페이지는 세션·CSRF 토큰을 쓰는 <code>.do</code>
+        엔드포인트라 파라미터를 추측할 수 없습니다. 공시 목록에서 <b>F12 → Network → 검색 실행 →
+        해당 요청 우클릭 → Copy → Copy as cURL</b> 로 복사해 아래에 붙여넣으면 그 요청을 그대로 재생합니다.
+      </div>
+      <div class="formgrid">
+        <div><label class="fld" for="apiBase">API 주소</label>
+          <input type="text" id="apiBase" value="/api" placeholder="/api 또는 https://내앱.vercel.app/api"></div>
+        <div><label class="fld" for="cwPageParam">페이지 파라미터</label>
+          <input type="text" id="cwPageParam" value="pageIndex"></div>
+        <div><label class="fld" for="cwPages">수집 페이지 수</label>
+          <input type="number" id="cwPages" value="5" min="1" max="200"></div>
+        <div><label class="fld" for="cwDelay">요청 간 지연(ms)</label>
+          <input type="number" id="cwDelay" value="800" min="200" step="100"></div>
+      </div>
+      <label class="fld" for="cwCurl">목록 요청 cURL</label>
+      <textarea id="cwCurl" style="min-height:110px;font-family:var(--mono);font-size:12px"
+        placeholder="curl 'https://www.bojo.go.kr/ea/getEA001201View.do' -H 'Content-Type: application/x-www-form-urlencoded' --data-raw 'pageIndex=1&...'"></textarea>
+      <p class="subhead">개별 사업 상세까지 수집 (선택 — 집행내역은 상세 페이지에 있습니다)</p>
+      <div class="formgrid">
+        <div style="grid-column:1/-1"><label class="fld" for="cwDetailUrl">상세 URL 템플릿 (<code>{id}</code> 자리 표시)</label>
+          <input type="text" id="cwDetailUrl" placeholder="https://www.bojo.go.kr/ea/getEA001202View.do?bsnsId={id}"></div>
+        <div><label class="fld" for="cwIdRegex">사업 ID 추출 정규식</label>
+          <input type="text" id="cwIdRegex" value="['\&quot;]([0-9A-Za-z_-]{4,40})['\&quot;]"></div>
+        <div><label class="fld" for="cwMax">최대 사업 수</label>
+          <input type="number" id="cwMax" value="20" min="1" max="200"></div>
+      </div>
+      <div class="btnrow">
+        <button class="btn ghost" id="btnProbe">① 구조 진단</button>
+        <button class="btn" id="btnCrawl">② 수집 후 분석</button>
+        <span id="cwStatus" class="chip w" hidden></span>
+      </div>
+      <div id="cwOut" style="margin-top:14px"></div>
+    </div>
+  </details>
+
   <div id="auditResult" style="margin-top:22px"></div>
 </section>
 
@@ -869,6 +911,78 @@ $("#demoData").addEventListener("click",()=>{
   runAudit(rows,"예시 데이터(가상)");
   $("#auditResult").insertAdjacentHTML("afterbegin",
     '<div class="callout warn" style="margin-bottom:14px"><b>시연용 가상 데이터입니다.</b> 실재하는 사업·단체가 아니며, 엔진 동작 확인용입니다. 실제 분석은 공시 사이트에서 내려받은 데이터를 올려 주세요.</div>');
+});
+
+/* ── 서버 크롤링 연동 (Vercel Python Functions) ── */
+const cwStat=(t,ok)=>{const e=$("#cwStatus");e.hidden=!t;e.textContent=t||"";
+  e.className="chip "+(ok===false?"crit":ok===true?"good":"w");};
+async function callApi(path,body){
+  const base=$("#apiBase").value.replace(/\/$/,"")||"/api";
+  let res;
+  try{ res=await fetch(base+path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}); }
+  catch(e){ throw new Error(`API에 연결하지 못했습니다(${base+path}). Vercel에 배포했는지, API 주소가 맞는지 확인하세요.`); }
+  const t=await res.text(); let j;
+  try{ j=JSON.parse(t); }catch{ throw new Error(`서버가 JSON이 아닌 응답을 보냈습니다(HTTP ${res.status}): ${t.slice(0,200)}`); }
+  if(!j.ok) throw new Error(j.error||`HTTP ${res.status}`);
+  return j;
+}
+function crawlBody(){
+  const curl=$("#cwCurl").value.trim();
+  if(!curl) throw new Error("목록 요청 cURL을 붙여넣으세요 (F12 → Network → Copy as cURL).");
+  const b={curl,pageParam:$("#cwPageParam").value.trim()||"pageIndex",
+    pages:+$("#cwPages").value||5,delayMs:+$("#cwDelay").value||800,budgetMs:50000};
+  const du=$("#cwDetailUrl").value.trim();
+  if(du) b.detail={urlTemplate:du,idFrom:"onclick",
+    idRegex:$("#cwIdRegex").value.trim()||"['\"]([0-9A-Za-z_-]{4,40})['\"]",max:+$("#cwMax").value||20};
+  return b;
+}
+$("#btnProbe").addEventListener("click",async()=>{
+  try{
+    cwStat("진단 중…");
+    const curl=$("#cwCurl").value.trim();
+    if(!curl) throw new Error("cURL을 먼저 붙여넣으세요.");
+    const j=await callApi("/probe",{curl});
+    cwStat("진단 완료",true);
+    $("#cwOut").innerHTML=`
+      <div class="card">
+        <p class="subhead" style="margin-top:0">응답</p>
+        <p style="margin:0 0 10px">HTTP ${j.status} · ${(j.bytes/1024).toFixed(0)}KB · ${esc(j.contentType)}<br>
+        robots: ${j.robots.allowed?'<span class="chip good">허용</span>':'<span class="chip crit">금지</span>'} ${esc(j.robots.note)}</p>
+        <p class="subhead">페이지 파라미터 후보</p>
+        <p style="margin:0 0 10px">${j.pageParamCandidates.map(c=>`<span class="chip on" style="margin-right:4px">${esc(c)}</span>`).join("")}</p>
+        <p class="subhead">인식된 표</p>
+        ${j.tables.length?j.tables.map(t=>`<div style="margin-bottom:8px;font-size:13px">
+           <b>표#${t.index}</b> — 매칭 ${t.matchScore}개 컬럼, ${t.rowCount}행 ${t.caption?`(${esc(t.caption)})`:""}<br>
+           <span style="color:var(--muted)">헤더: ${t.header.map(esc).join(" | ")}</span><br>
+           인식: ${t.recognizedColumns.map(c=>`<span class="chip w">${esc(c)}</span>`).join(" ")}</div>`).join("")
+          :'<p class="missing">표를 찾지 못했습니다 — 데이터가 XHR로 별도 로드되는 페이지입니다. Network 탭에서 <b>실제 데이터 요청(XHR/Fetch)</b>의 cURL을 복사해 다시 진단하세요.</p>'}
+        ${j.detailLinkSamples.length?`<p class="subhead">개별 사업 상세 링크 샘플 (여기서 ID 패턴 확인)</p>
+          <div class="tablewrap"><table style="min-width:520px"><thead><tr><th>요소</th><th>텍스트</th><th>onclick/href</th><th>ID 후보</th></tr></thead>
+          <tbody>${j.detailLinkSamples.slice(0,6).map(l=>`<tr><td>${esc(l.tag||"a")}</td><td>${esc(l.text)}</td>
+            <td style="font-family:var(--mono);font-size:11px">${esc((l.onclick||l.href).slice(0,70))}</td>
+            <td>${(l.idCandidates||[]).map(esc).join(", ")}</td></tr>`).join("")}</tbody></table></div>`:""}
+        <p style="margin:12px 0 0;font-size:13px;color:var(--muted)">${esc(j.hint)}</p>
+      </div>`;
+  }catch(e){cwStat("실패",false);$("#cwOut").innerHTML=`<div class="callout warn">${esc(e.message)}</div>`;}
+});
+$("#btnCrawl").addEventListener("click",async()=>{
+  try{
+    let body=crawlBody(), all=[], diags=[], guard=0;
+    cwStat("수집 중…");
+    while(guard++<20){
+      const j=await callApi("/crawl",body);
+      all=all.concat(j.rows); diags=diags.concat(j.diagnostics||[]);
+      cwStat(`수집 중… ${all.length}행`);
+      if(!j.nextPage||!j.rows.length) break;
+      body={...body,startPage:j.nextPage,detail:undefined};   // 이어받기(상세는 1회만)
+    }
+    if(!all.length) throw new Error("수집된 행이 없습니다. ① 구조 진단으로 표가 인식되는지 먼저 확인하세요.");
+    cwStat(`수집 완료 ${all.length}행`,true);
+    $("#cwOut").innerHTML=`<div class="card"><p style="margin:0"><b>${all.length}행</b> 수집 완료 — 아래에 사업별 분석 결과가 표시됩니다.</p>
+      <details style="margin-top:8px"><summary style="cursor:pointer;font-size:13px;color:var(--muted)">수집 로그</summary>
+      <pre style="font-family:var(--mono);font-size:11px;white-space:pre-wrap;margin:8px 0 0">${esc(JSON.stringify(diags,null,1).slice(0,3000))}</pre></details></div>`;
+    runAudit(all,"포털 직접 수집");
+  }catch(e){cwStat("실패",false);$("#cwOut").innerHTML=`<div class="callout warn">${esc(e.message)}</div>`;}
 });
 
 renderRules(); writeForm(null); initDB(); renderDB();
