@@ -16,7 +16,7 @@ ROOT = HERE.parent
 sys.path.insert(0, str(HERE))
 from model import analyze                                        # noqa: E402
 
-def _goto(page, url, tries=3):
+def _goto(page, url, tries=5):
     last=None
     for i in range(tries):
         try:
