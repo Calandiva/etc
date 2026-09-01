@@ -114,8 +114,9 @@ def run(mode):
         ctx=br.new_context(user_agent=os.environ.get("CRAWL_UA",
             "SubsidyDisclosureResearch/1.0 (public data; github actions)"), locale="ko-KR")
         page=ctx.new_page()
-        page.set_default_timeout(20000)
-        page.goto(list_url, wait_until="networkidle")
+        page.set_default_timeout(45000)
+        page.goto(list_url, wait_until="domcontentloaded", timeout=60000)
+        page.wait_for_timeout(2500)
 
         if mode=="recon":
             RB.mkdir(parents=True, exist_ok=True)
@@ -173,11 +174,12 @@ def run(mode):
                         if det:
                             all_rows.extend(det)
                             print(f"  [{idx+1}] {(inherit or {}).get('project','?')[:24]}: {len(det)}행")
-                    page.go_back(wait_until="networkidle")
+                    page.go_back(wait_until="domcontentloaded")
                     page.wait_for_timeout(400)
                 except Exception as e:
                     print(f"  [{idx+1}] 건너뜀: {e}")
-                    try: page.goto(list_url, wait_until="networkidle")
+                    try: page.goto(list_url, wait_until="domcontentloaded", timeout=60000)
+        page.wait_for_timeout(2500)
                     except Exception: pass
         DATA.mkdir(exist_ok=True)
         (DATA/"disclosures.json").write_text(json.dumps(
