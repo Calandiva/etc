@@ -25,10 +25,16 @@ def to_num(v):
     import re; m=re.sub(r"[^0-9.\-]","",str(v or ""))
     try: return float(m) if m not in("","-",".") else 0.0
     except: return 0.0
-def get(url):
-    req=urllib.request.Request(url, headers={"User-Agent":"SubsidyResearch/1.0"})
-    with urllib.request.urlopen(req, timeout=30) as r:
-        return r.read().decode("utf-8","replace")
+def get(url, tries=4):
+    last=None
+    for i in range(tries):
+        try:
+            req=urllib.request.Request(url, headers={"User-Agent":"Mozilla/5.0 SubsidyResearch/1.0","Accept":"application/json,*/*"})
+            with urllib.request.urlopen(req, timeout=60) as r:
+                return r.read().decode("utf-8","replace")
+        except Exception as e:
+            last=e; time.sleep(2*(i+1))
+    raise last
 def xml_items(text):
     import xml.etree.ElementTree as ET
     try: root=ET.fromstring(text)
