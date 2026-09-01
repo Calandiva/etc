@@ -1,6 +1,43 @@
 {
- "scripts": [],
- "funcs": [],
+ "scripts": [
+  "https://www.bojo.go.kr/js/iptl/ea/EA001201.js?v=20260708"
+ ],
+ "funcs": [
+  {
+   "nm": "f_btnFiledown",
+   "src": "function f_btnFiledown() {\r\n\tvar param = {\r\n\t\t\ttype : 2 /*1 : 공통, 2: 로컬 함수 직접 호출*/\r\n\t\t\t, callback : \"f_btnXlsDownMain\" /*콜백함수 호출 공통이 아닌경우 해당함수에 다운로드 */\r\n\t\t\t, buttname : \"EA001201_btnFiledown\" /*downlad 버턴 ID 선언*/\r\n\t\t\t};\r\n\tsims.comm.filedown(param);\r\n}"
+  },
+  {
+   "nm": "f_btnXlsDownMain",
+   "src": "function f_btnXlsDownMain(fileType){\r\n\t//var path = \"/ea/retrieveInfoPblntfTrgetMngListExcelDownload.do\";\r\n\t// 서버로 넘길 파라미터\r\n\tvar fiscalyear = $(\"#EA001201FrmSrch_fsyr\").val();\r\n\tvar bsnsyear = $(\"#EA001201FrmSrch_bsnsyear\").val();\r\n\tvar jrsdCode = $(\"#EA001201Frm_jrsdCode\").val();\r\n\tvar excInsttNm = $(\"#EA001201FrmSrch_excInsttNm\").val();\r\n\tvar ddtlbzNm = $(\"#EA001201FrmSrch_ddtlbzNm\").val();\r\n\tvar dcsnBeginDe = $(\"#EA001201FrmSrch_dcsnBeginDe\").val();\r\n\tvar dcsnEndDe = $(\"#EA001201FrmSrch_dcsnEndDe\").val();\r\n\tvar ifpbntSysSeCode = $(\"#EA001201FrmSrch_ifpbntSysSeCode\").val();\r\n\t\r\n\t//지방보조금\r\n\tvar basisCode = $('#EA001201FrmSrch_basisCode').val();\r\n\tvar wdrLcgvCode = $('#EA001201FrmSrch_wdrLcgvCode').val();\r\n\tvar labSfrndCode = $('#EA001201FrmSrch_labSfrndCode').val();\r\n\t\r\n\tvar excInsttNmSearchFilterAdd = $('#excInsttNmSearchFilterAdd').val();\r\n\tvar excInsttNmSearchFilterDel = $('#excInsttNmSearchFilterDel').val();\r\n\tvar ddtlbzNmSearchFilterAdd = $('#ddtlbzNmSearchFilterAdd').val();\r\n\tvar ddtlbzNmSearchFilterDel = $('#ddtlbzNmSearchFilterDel').val();\r\n\t\r\n\t/*var params = {\r\n\t\t\t\"fiscalyear\":fiscalyear\r\n\t\t\t,\"bsnsyear\":bsnsyear\r\n\t\t\t,\"jrsdCode\":jrsdCode\r\n\t\t\t,\"excInsttNm\":excInsttNm\r\n\t\t\t,\"ddtlbzNm\":ddtlbzNm\r\n\t\t\t,\"dcsnBeginDe\":dcsnBeginDe\r\n\t\t\t,\"dcsnEndDe\":dcsnEndDe\r\n\t\t\t,\"ifpbntSysSeCode\":ifpbntSysSeCode\r\n\t\t\t,\"searchFilterYn\":$('#searchFilterYn').val()\r\n\t\t\t,\"excInsttNmSearchFilterAdd\":excInsttNmSearchFilterAdd\r\n\t\t\t,\"excInsttNmSearchFilterDel\":excInsttNmSearchFilterDel\r\n\t\t\t,\"ddtlbzNmSearchFilterAdd\":ddtlbzNmSearchFilterAdd\r\n\t\t\t,\"ddtlbzNmSearchFilterDel\":ddtlbzNmSearchFilterDel\r\n\t\t\t,\"basisCode\":basisCode\r\n\t\t\t,\"wdrLcgvCode\":wdrLcgvCode\r\n\t\t\t,\"labSfrndCode\":labSfrndCode\r\n\t\t\t};\r\n    var initFile = {};\r\n    initFile.Cfg = {\r\n            title    : \"보조사업자 정보공시 대상목록\"\r\n           ,filename : \"보조사업자 정보공시 대상목록_다운로드파일\"\r\n           ,type     : 1 //1:EXCEL, 2:CSV. 3:TXT\r\n           ,menuid   : \"USRM_10109\"\r\n           ,queryId  : \"IPTL-IfpbntDtaInquire.retrieveInfoPblntfTrgetMngListDownLoad\""
+  }
+ ],
  "download": null,
- "buttons": []
+ "jsLen": 65223,
+ "funcNames": [
+  "f_btnFiledown",
+  "f_btnXlsDownMain"
+ ],
+ "doPaths": [
+  "/ea/getEA001201View.do",
+  "/ja/getJA005101View.do",
+  "/comm/retrieveCommComboList.do",
+  "/ea/retrieveInfoPblntfTrgetMngListExcelDownload.do",
+  "/ea/retrieveInfoPblntfTrgetMngList.do",
+  "/ea/getEA001301Popup.do",
+  "/ea/getWdrLcgvCodeList.do",
+  "/ea/getLabSfrndCodeList.do"
+ ],
+ "buttons": [
+  {
+   "t": "excel",
+   "onclick": "",
+   "id": "EA001201FrmSrch_fileGubun"
+  },
+  {
+   "t": "파일 저장",
+   "onclick": "",
+   "id": "EA001201_btnFiledown"
+  }
+ ]
 }
