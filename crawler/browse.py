@@ -178,8 +178,9 @@ def run(mode):
                     page.wait_for_timeout(400)
                 except Exception as e:
                     print(f"  [{idx+1}] 건너뜀: {e}")
-                    try: page.goto(list_url, wait_until="domcontentloaded", timeout=60000)
-        page.wait_for_timeout(2500)
+                    try:
+                        page.goto(list_url, wait_until="domcontentloaded", timeout=60000)
+                        page.wait_for_timeout(1500)
                     except Exception: pass
         DATA.mkdir(exist_ok=True)
         (DATA/"disclosures.json").write_text(json.dumps(
