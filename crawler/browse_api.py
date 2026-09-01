@@ -164,40 +164,36 @@ def run(mode="api"):
         (RB/"code-elements.json").write_text(json.dumps(rel,ensure_ascii=False,indent=1),encoding="utf-8")
         print("select",len(selects),"개, 코드요소",len(rel),"개 덤프")
 
-        # ★★ 정답 serialize를 만들고(필드 직접 복사) 그 본문으로 즉시 fetch → 응답 확인
-        truth=page.evaluate("""async (a)=>{
-          const [y, basis] = a;
-          const jq = window.jQuery || window.$;
-          if(!jq) return {err:'no jQuery'};
-          const setById=(id,v)=>{const el=document.getElementById(id); if(el){el.value=v;}};
-          // 검색조건: 방문자가 하는 것과 동일하게 회계연도/근거만 세팅
-          setById('EA001201FrmSrch_fsyr', String(y));
-          setById('EA001201FrmSrch_bsnsyear', String(y));
-          setById('EA001201FrmSrch_basisCode', basis);
-          setById('EA001201FrmSrch_currentPageNum', '1');
-          setById('EA001201FrmSrch_nPageSize', '100');
-          setById('EA001201FrmSrch_jrsdCode','');
-          setById('EA001201FrmSrch_wdrLcgvCode','');
-          setById('EA001201FrmSrch_dcsnBeginDe','');
-          setById('EA001201FrmSrch_dcsnEndDe','');
-          setById('EA001201FrmSrch_sortOrder','');
-          const body = jq('#EA001201FrmSrch').serialize();
-          let out={serialize: body};
-          try{
-            const r = await fetch('/ea/retrieveInfoPblntfTrgetMngList.do', {method:'POST', credentials:'include',
-              headers:{'Content-Type':'application/x-www-form-urlencoded; charset=UTF-8','X-Requested-With':'XMLHttpRequest'}, body});
-            out.status = r.status;
-            const t = await r.text();
-            try{ out.json = JSON.parse(t); }catch(e){ out.text = t.slice(0,600); }
-          }catch(e){ out.fetchError = String(e); }
+        # ★★ B안: 포털 클라이언트 JS 원본을 읽어 '파일 저장'(엑셀) 엔드포인트·파라미터 확정
+        jsinfo=page.evaluate("""async ()=>{
+          const out={scripts:[], funcs:[], download:null};
+          // 로드된 스크립트 URL 목록
+          out.scripts=[...document.scripts].map(s=>s.src).filter(Boolean).slice(0,40);
+          // EA001201 관련 JS 원본 fetch
+          const ea=out.scripts.find(u=>/EA001201/i.test(u));
+          if(ea){
+            try{ const t=await (await fetch(ea)).text();
+              out.jsLen=t.length;
+              // 다운로드/엑셀/파일 함수 블록 추출
+              const names=[...t.matchAll(/function\s+(f_[A-Za-z0-9_]*(?:[Ee]xcel|[Dd]own|[Ff]ile|[Ss]ave|[Xx]ls)[A-Za-z0-9_]*)\s*\(/g)].map(m=>m[1]);
+              out.funcNames=[...new Set(names)];
+              // 각 함수 소스 잘라내기
+              const grab=(nm)=>{ const i=t.indexOf('function '+nm); if(i<0) return null;
+                let d=0,j=t.indexOf('{',i); if(j<0) return t.slice(i,i+400);
+                for(let k=j;k<t.length&&k<j+4000;k++){ if(t[k]==='{')d++; else if(t[k]==='}'){d--; if(d===0) return t.slice(i,k+1);} }
+                return t.slice(i,i+2000); };
+              out.funcs=out.funcNames.slice(0,8).map(nm=>({nm, src:grab(nm)}));
+              // .do 다운로드 경로 후보
+              out.doPaths=[...new Set([...t.matchAll(/["'](\/[A-Za-z0-9_\/]+\.do)["']/g)].map(m=>m[1]))].slice(0,30);
+            }catch(e){ out.err=String(e); }
+          }
+          // 페이지 내 '파일 저장/엑셀' 버튼 onclick
+          out.buttons=[...document.querySelectorAll('a,button,input')].filter(el=>/파일|저장|엑셀|excel|다운/i.test(el.textContent+el.value+el.title+(el.onclick||''))).slice(0,10).map(el=>({t:(el.textContent||el.value||'').trim().slice(0,20), onclick:(el.getAttribute('onclick')||'').slice(0,160), id:el.id}));
           return out;
-        }""", [years[0], "2"])
-        (RB/"truth.json").write_text(json.dumps(truth,ensure_ascii=False,indent=1)[:200000],encoding="utf-8")
-        js=truth.get("json") if isinstance(truth,dict) else None
-        err0=js.get("ERROR-0000") if isinstance(js,dict) else None
-        items=find_list(js) if js else None
-        print("정답 serialize:",str(truth.get("serialize"))[:200])
-        print("status",truth.get("status"),"ERROR-0000:",err0,"items:",(len(items) if items else 0))
+        }""")
+        (RB/"js-download.json").write_text(json.dumps(jsinfo,ensure_ascii=False,indent=1)[:300000],encoding="utf-8")
+        print("스크립트",len(jsinfo.get("scripts",[])),"다운로드함수",jsinfo.get("funcNames"),"버튼",len(jsinfo.get("buttons",[])))
+        truth={"skipped":"B mode recon"}
 
         def collect_window(year, basis, beg, end):
             """[beg,end] 창을 수집. 범위 초과면 반으로 분할 재귀."""
