@@ -107,6 +107,17 @@ button.btn.danger{border-color:var(--crit);background:none;color:var(--crit)}
 .portalbtns a{display:inline-block;border:1px solid var(--accent);color:var(--accent-ink);text-decoration:none;font-weight:700;border-radius:4px;padding:8px 14px;font-size:14px}
 .empty{color:var(--muted);text-align:center;padding:40px 0}
 footer.site{border-top:1px solid var(--line);color:var(--muted);font-size:12px;padding:18px 0 40px}
+.dbrow{background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--line);border-radius:6px;padding:14px 18px;margin-bottom:10px}
+.dbrow.r1{border-left-color:var(--crit)}
+.dbrow.r2{border-left-color:var(--warn)}
+.dbrow.r3{border-left-color:var(--accent)}
+.dbtop{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin-bottom:4px}
+.dbtop .rank{font-family:var(--mono);font-size:12px;color:var(--muted);min-width:34px}
+.dbtop .ttl{font-weight:700;flex:1;min-width:220px}
+.dbrow p.dsc{margin:6px 0 8px;font-size:14px;color:var(--muted)}
+.dbmeta{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;align-items:center}
+.dbmeta b{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.dbmeta .lbl{color:var(--muted);font-family:var(--mono);font-size:11px;letter-spacing:.06em}
 @media (prefers-reduced-motion: no-preference){ .scorebar i{transition:width .4s ease} }
 </style>
 </head>
@@ -119,6 +130,7 @@ footer.site{border-top:1px solid var(--line);color:var(--muted);font-size:12px;p
   <nav class="tabs" role="tablist">
     <button role="tab" aria-selected="true" data-tab="guide">신고 가이드·포털</button>
     <button role="tab" aria-selected="false" data-tab="assess">사례 진단</button>
+    <button role="tab" aria-selected="false" data-tab="db">실제 사례 DB</button>
     <button role="tab" aria-selected="false" data-tab="rank">위험도 순위</button>
     <button role="tab" aria-selected="false" data-tab="report">신고서 생성</button>
   </nav>
@@ -162,6 +174,28 @@ footer.site{border-top:1px solid var(--line);color:var(--muted);font-size:12px;p
         <tr><td><b>고용노동부 1350</b></td><td>고용장려금·실업급여·고용유지지원금</td><td>고용보험 부정수급 자진신고 시 추가징수 면제 제도</td><td><a href="https://www.moel.go.kr" target="_blank" rel="noopener">고용부</a></td></tr>
         <tr><td><b>감사원</b><br>bai.go.kr</td><td>재정·예산 집행 비리, 공직자 관련</td><td>국민감사청구·재정비리 신고</td><td><a href="https://www.bai.go.kr" target="_blank" rel="noopener">감사원</a></td></tr>
         <tr><td><b>국민신문고</b><br>epeople.go.kr</td><td>소관 기관이 불명확할 때</td><td>자동으로 소관 기관 배정</td><td><a href="https://www.epeople.go.kr" target="_blank" rel="noopener">국민신문고</a></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="section">
+    <p class="eyebrow">OPEN DATA SOURCES</p>
+    <h2>정보공개 사이트 — 직접 확인·수집처</h2>
+    <p>사례 DB의 원천이자, 회원님이 직접 최신 자료를 확인할 수 있는 공개 데이터 소스입니다.
+    보조금통합포털·지방재정365는 <b>보조사업자·집행현황을 실명으로 공개</b>하므로 의심 사업을 직접 조회할 수 있고,
+    명단공표 페이지는 이미 확정된 고액 부정수급자를 공개합니다.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>사이트</th><th>공개 내용</th><th>활용법</th><th>바로가기</th></tr></thead>
+      <tbody>
+        <tr><td><b>보조금통합포털</b><br>bojo.go.kr</td><td>보조사업자 현황, 집행현황, 서비스 유형별 현황</td><td>의심 사업의 교부액·집행액·수행기관을 실명 조회 → 사례 진단 입력값 확보</td><td><a href="https://bojo.go.kr/opn/im/im002/getIM002001QView.do" target="_blank" rel="noopener">보조사업자</a> · <a href="https://bojo.go.kr/opn/ig/ig002/getIG002002QView.do" target="_blank" rel="noopener">집행현황</a></td></tr>
+        <tr><td><b>e나라도움</b><br>gosims.go.kr</td><td>보조금 부정 주요 사례, 부정수급 제보</td><td>정부가 공개한 수법 유형을 탐지 로직과 대조</td><td><a href="https://www.gosims.go.kr/hg/hg002/retrieveIllegalcaseList.do" target="_blank" rel="noopener">부정 사례</a></td></tr>
+        <tr><td><b>명단공표 (각 부처)</b></td><td>공공재정환수법상 고액부정청구자 명단 (매년 3월 31일까지 공표, 1년 게시)</td><td>확정된 부정수급자 확인 — 재발·유사사업 추적의 출발점</td><td><a href="https://www.mcst.go.kr/site/s_notice/notice/noticeView.jsp?pSeq=19113" target="_blank" rel="noopener">문체부 예시</a></td></tr>
+        <tr><td><b>지방재정365</b><br>lofin.mois.go.kr</td><td>지자체 재정공시, 지방보조금 집행·교부 내역</td><td>지방보조금 수령 단체·금액 대조, 중복·이중수급 확인</td><td><a href="https://lofin.mois.go.kr/portal/main.do" target="_blank" rel="noopener">지방재정365</a></td></tr>
+        <tr><td><b>열린재정</b><br>openfiscaldata.go.kr</td><td>국가·지방 재정 세부사업별 예산·집행</td><td>보조사업 예산 규모 대비 집행 이상치 확인</td><td><a href="https://www.openfiscaldata.go.kr" target="_blank" rel="noopener">열린재정</a></td></tr>
+        <tr><td><b>공공데이터포털</b><br>data.go.kr</td><td>기관별 공개 데이터셋·오픈API</td><td>보조금·집행 데이터셋을 내려받아 대량 교차검증</td><td><a href="https://www.data.go.kr/tcs/dss/selectDataSetList.do" target="_blank" rel="noopener">데이터 검색</a></td></tr>
+        <tr><td><b>기획재정부</b><br>moef.go.kr</td><td>국고보조금 총괄 현황, 부정징후 점검 결과 발표</td><td>연도별 적발 통계·수법 최신화</td><td><a href="https://www.moef.go.kr/id/asist.do?menuNo=6090100" target="_blank" rel="noopener">국고보조금 현황</a></td></tr>
+        <tr><td><b>청렴포털·권익위</b><br>clean.go.kr</td><td>부정청구 사례집, 보상·포상 제도, 환수 통계</td><td>신고 요건·보상금 산정 근거 확인</td><td><a href="https://www.clean.go.kr/menu.es?mid=a10602020000" target="_blank" rel="noopener">신고제도 안내</a></td></tr>
+        <tr><td><b>국가법령정보센터</b><br>law.go.kr</td><td>판결문·심판례·법령 원문</td><td>유사 사건의 확정판결로 입증 수준 가늠</td><td><a href="https://www.law.go.kr" target="_blank" rel="noopener">법령·판례</a></td></tr>
       </tbody>
     </table></div>
   </div>
@@ -225,6 +259,30 @@ footer.site{border-top:1px solid var(--line);color:var(--muted);font-size:12px;p
   </div>
 </section>
 
+<!-- ══════════ TAB · 실제 사례 DB ══════════ -->
+<section class="tabpane" id="pane-db" hidden>
+  <p class="eyebrow">VERIFIED CASE DATABASE</p>
+  <h2>실제 적발 사례 <span id="dbCount" style="font-family:var(--mono)"></span>건 — 부정 확률 순</h2>
+  <p>정부 점검 발표·감사 결과·법원 판결·기관 환수 처분 등 <b>공개된 실제 사례</b>를 신고 구분별로 정리했습니다.
+  각 사례의 <b>부정 확률</b>은 확인 단계(판결 &gt; 감사 적발 &gt; 기관 처분 &gt; 통계 유형)와 수법의 명백성으로 산정하며,
+  <b>예상 보상금</b>은 공개된 부정수급액에 부패신고 보상금 구간율(4~30%, 최대 30억)을 적용한 개략 추정치입니다.</p>
+
+  <div class="grid cols3" id="dbStats" style="margin-bottom:18px"></div>
+
+  <div class="formgrid" style="margin-bottom:16px">
+    <div><label class="fld" for="db-cat">신고 구분</label><select id="db-cat"><option value="">전체</option></select></div>
+    <div><label class="fld" for="db-sort">정렬 기준</label><select id="db-sort">
+      <option value="risk">부정 확률 높은 순</option>
+      <option value="reward">예상 보상금 큰 순</option>
+      <option value="amt">부정수급액 큰 순</option>
+      <option value="year">최신 연도 순</option>
+    </select></div>
+    <div><label class="fld" for="db-conf">확인 단계</label><select id="db-conf"><option value="">전체</option></select></div>
+    <div><label class="fld" for="db-q">검색 (수법·기관·키워드)</label><input type="text" id="db-q" placeholder="예: 페이백, 유령, 세금계산서"></div>
+  </div>
+  <div id="dbList"></div>
+</section>
+
 <!-- ══════════ TAB 3 · 순위 ══════════ -->
 <section class="tabpane" id="pane-rank" hidden>
   <p class="eyebrow">PRIORITY RANKING</p>
@@ -267,6 +325,7 @@ footer.site{border-top:1px solid var(--line);color:var(--muted);font-size:12px;p
   기획재정부 국고보조금 부정징후 점검(SFDS) 발표자료. 본 도구는 신고 준비를 돕는 참고용이며 법률 자문이 아닙니다.
 </div></footer>
 
+<script src="cases.js"></script>
 <script>
 /* ── 탐지 로직 14종: 정부 SFDS 패턴 + 적발 사례 기반, weight = 심각도(회수 실적 기준) ── */
 const RULES=[
@@ -328,7 +387,7 @@ document.querySelectorAll("nav.tabs button").forEach(b=>b.addEventListener("clic
 function showTab(t){
   document.querySelectorAll("nav.tabs button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tab===t)));
   document.querySelectorAll(".tabpane").forEach(p=>p.hidden=(p.id!=="pane-"+t));
-  if(t==="rank")renderCases(); if(t==="report")fillCaseSelect();
+  if(t==="rank")renderCases(); if(t==="report")fillCaseSelect(); if(t==="db")renderDB();
 }
 
 /* ── 진단 폼 렌더 ── */
@@ -508,7 +567,90 @@ $("#dlReport").addEventListener("click",async()=>{
   a.download=filename; a.click(); URL.revokeObjectURL(a.href);
 });
 
-renderRules(); writeForm(null);
+/* ══════════ 실제 사례 DB ══════════ */
+/* 보상금 = 보상대상가액 구간별 누진율(부패신고 보상금 지급기준, 최대 30억) — 개략 추정 */
+function reward(manwon){            // 입력·출력 단위: 만원
+  if(!manwon) return 0;
+  const b=[[10000,.30,0],[50000,.20,3000],[200000,.14,11000],[400000,.08,32000],[Infinity,.04,48000]];
+  let prev=0;
+  for(const [cap,rate,base] of b){
+    if(manwon<=cap) return Math.min(Math.round(base+(manwon-prev)*rate),300000);
+    prev=cap;
+  }
+  return 300000;
+}
+const CONF_W={court:1.0,audit:.95,agency:.92,stat:.80};   // 확인 단계 가중
+const won=v=>v>=10000?(v/10000).toFixed(v>=100000?0:1).replace(/\.0$/,"")+"억원":v.toLocaleString()+"만원";
+
+function dbScore(c){
+  const prob=Math.min(99,Math.round(c.risk*CONF_W[c.conf]));   // 부정 확률
+  const rw=reward(c.amt);
+  return {prob, rw};
+}
+function initDB(){
+  const cs=$("#db-cat"), cf=$("#db-conf");
+  Object.entries(CATS).forEach(([k,v])=>cs.insertAdjacentHTML("beforeend",`<option value="${k}">${v.n}</option>`));
+  Object.entries(CONF).forEach(([k,v])=>cf.insertAdjacentHTML("beforeend",`<option value="${k}">${v}</option>`));
+  ["db-cat","db-sort","db-conf","db-q"].forEach(id=>$("#"+id).addEventListener("input",renderDB));
+  $("#dbCount").textContent=CASES.length;
+}
+function renderDB(){
+  const cat=$("#db-cat").value, conf=$("#db-conf").value, q=$("#db-q").value.trim().toLowerCase(), sort=$("#db-sort").value;
+  let rows=CASES.map(c=>({c,s:dbScore(c)}));
+  if(cat) rows=rows.filter(r=>r.c.cat===cat);
+  if(conf) rows=rows.filter(r=>r.c.conf===conf);
+  if(q) rows=rows.filter(r=>(r.c.t+r.c.d+CATS[r.c.cat].n+r.c.logic.map(l=>RULES.find(x=>x.id===l)?.name||"").join()).toLowerCase().includes(q));
+  const cmp={risk:(a,b)=>b.s.prob-a.s.prob||b.s.rw-a.s.rw, reward:(a,b)=>b.s.rw-a.s.rw||b.s.prob-a.s.prob,
+             amt:(a,b)=>b.c.amt-a.c.amt, year:(a,b)=>b.c.y-a.c.y||b.s.prob-a.s.prob};
+  rows.sort(cmp[sort]);
+
+  // 통계 요약
+  const tot=rows.reduce((n,r)=>n+r.c.amt,0), rwTot=rows.reduce((n,r)=>n+r.s.rw,0);
+  const hi=rows.filter(r=>r.s.prob>=90).length;
+  $("#dbStats").innerHTML=`
+    <div class="card"><p class="eyebrow" style="margin:0 0 4px">표시 중인 사례</p><div class="bignum">${rows.length}건</div>
+      <p style="margin:4px 0 0;font-size:13px;color:var(--muted)">부정 확률 90 이상 ${hi}건</p></div>
+    <div class="card"><p class="eyebrow" style="margin:0 0 4px">공개된 부정수급액 합계</p><div class="bignum">${tot?won(tot):"–"}</div>
+      <p style="margin:4px 0 0;font-size:13px;color:var(--muted)">금액 비공개 사례 제외</p></div>
+    <div class="card"><p class="eyebrow" style="margin:0 0 4px">예상 보상금 합계(추정)</p><div class="bignum">${rwTot?won(rwTot):"–"}</div>
+      <p style="margin:4px 0 0;font-size:13px;color:var(--muted)">건별 최대 30억 한도 적용</p></div>`;
+
+  $("#dbList").innerHTML = rows.length ? rows.map(({c,s},i)=>{
+    const cls=s.prob>=90?"r1":s.prob>=80?"r2":"r3";
+    const cat=CATS[c.cat], src=SRC[c.src];
+    return `<div class="dbrow ${cls}">
+      <div class="dbtop"><span class="rank">${String(i+1).padStart(3,"0")}</span>
+        <span class="ttl">${esc(c.t)}</span>
+        <span class="chip ${s.prob>=90?"crit":s.prob>=80?"warn":"on"}">부정확률 ${s.prob}</span></div>
+      <p class="dsc">${esc(c.d)}</p>
+      <div class="dbmeta">
+        <span><span class="lbl">신고구분</span> <b>${esc(cat.n)}</b></span>
+        <span><span class="lbl">부정수급액</span> <b>${c.amt?won(c.amt):"비공개"}</b></span>
+        <span><span class="lbl">예상보상금</span> <b style="color:var(--accent-ink)">${s.rw?"약 "+won(s.rw):"산정불가"}</b></span>
+        <span><span class="lbl">확인단계</span> <b>${CONF[c.conf]}</b></span>
+        <span><span class="lbl">연도</span> <b>${c.y}</b></span>
+      </div>
+      <div style="margin-top:8px">
+        ${c.logic.map(l=>`<span class="chip on" style="margin:0 4px 4px 0;display:inline-block">${esc(RULES.find(x=>x.id===l)?.name||l)}</span>`).join("")}
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--muted)">
+        접수처: ${esc(cat.portal)} · 근거: ${esc(cat.law)} · 출처: <a href="${src.u}" target="_blank" rel="noopener">${esc(src.n)}</a>
+      </div>
+      <div class="btnrow" style="margin-top:10px"><button class="btn ghost" data-import="${CASES.indexOf(c)}">이 수법으로 진단 시작</button></div>
+    </div>`;}).join("")
+    : '<p class="empty">조건에 맞는 사례가 없습니다.</p>';
+}
+$("#dbList").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-import]"); if(!b)return;
+  const c=CASES[+b.dataset.import];
+  editId=null; $("#editNotice").hidden=true;
+  writeForm({name:c.t.slice(0,40), target:"", type:{gukgo:"국고보조금",local:"지방보조금",bokji:"복지급여",goyong:"고용지원금",uiryo:"기타",rnd:"연구개발비(R&D)",nongsu:"기타",gita:"기타"}[c.cat]||"기타",
+    amount:c.amt, memo:`[참고 실제 사례] ${c.d}\n출처: ${SRC[c.src].n}`, sig:{}, docs:{}});
+  c.logic.forEach(l=>{ const first=document.querySelector(`#rule-${l} input[type=checkbox]`); if(first)first.checked=true; });
+  updateBadges(); updateLive(); showTab("assess"); window.scrollTo({top:0});
+});
+
+renderRules(); writeForm(null); initDB(); renderDB();
 </script>
 </body>
 </html>
