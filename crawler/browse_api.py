@@ -119,6 +119,35 @@ def run(mode="api"):
         (RB/"combo-responses.json").write_text(json.dumps(caught,ensure_ascii=False,indent=1)[:400000],encoding="utf-8")
         print("콤보 후보 응답",len(caught),"건")
 
+        # ★ 페이지의 f_search가 만드는 실제 요청/응답 캡처 (정답 파라미터 확보)
+        real={"reqs":[],"resps":[]}
+        def on_req(req):
+            if "retrieveInfoPblntfTrgetMngList" in req.url:
+                real["reqs"].append({"m":req.method,"pd":req.post_data or "","hdr":dict(req.headers)})
+        def on_resp2(resp):
+            if "retrieveInfoPblntfTrgetMngList" in resp.url:
+                try: real["resps"].append({"status":resp.status,"body":resp.text()[:6000]})
+                except Exception as e: real["resps"].append({"err":str(e)})
+        page.on("request", on_req); page.on("response", on_resp2)
+        # 지방(basisCode=2)로 전환 후 연도 세팅하고 f_search 직접 호출
+        for basis_try in ["2","1"]:
+            try:
+                page.evaluate("""(y)=>{
+                  const setv=(sel,v)=>{const el=document.querySelector(sel); if(el){el.value=v; el.dispatchEvent(new Event('change',{bubbles:true}));}};
+                  // 국고/지방 라디오
+                  document.querySelectorAll('input[name*=basisCode]').forEach(r=>{if(r.value===arguments[1]){r.checked=true;r.dispatchEvent(new Event('click',{bubbles:true}));}});
+                  setv('#EA001201Frm_basisCode', arguments[1]);
+                  setv('#EA001201Frm_fsyr', String(y)); setv('#EA001201Frm_bsnsyear', String(y));
+                  setv('select[id$=_fsyr]', String(y));
+                }""", years[0], basis_try)
+                page.wait_for_timeout(1200)
+                page.evaluate("()=>{ if(typeof f_search==='function') f_search(); }")
+                page.wait_for_timeout(4000)
+            except Exception as e:
+                real.setdefault("errors",[]).append(f"{basis_try}:{e}")
+        (RB/"real-request.json").write_text(json.dumps(real,ensure_ascii=False,indent=1)[:400000],encoding="utf-8")
+        print("실제 요청 캡처:",len(real["reqs"]),"응답:",len(real["resps"]))
+
         def collect_window(year, basis, beg, end):
             """[beg,end] 창을 수집. 범위 초과면 반으로 분할 재귀."""
             if qcount[0]>=max_queries: return
