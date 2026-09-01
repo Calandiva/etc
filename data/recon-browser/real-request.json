@@ -1,8 +1,4 @@
 {
  "reqs": [],
- "resps": [],
- "errors": [
-  "2:Page.evaluate() takes from 2 to 3 positional arguments but 4 were given",
-  "1:Page.evaluate() takes from 2 to 3 positional arguments but 4 were given"
- ]
+ "resps": []
 }
