@@ -1,1 +1,27 @@
-[]
+[
+ {
+  "id": "EA001201FrmSrch_jrsdCode",
+  "name": "jrsdCode",
+  "html": "<input type=\"hidden\" name=\"jrsdCode\" id=\"EA001201FrmSrch_jrsdCode\" value=\"\">"
+ },
+ {
+  "id": "EA001201FrmSrch_wdrLcgvCode",
+  "name": "wdrLcgvCode",
+  "html": "<input type=\"hidden\" name=\"wdrLcgvCode\" id=\"EA001201FrmSrch_wdrLcgvCode\" value=\"\">"
+ },
+ {
+  "id": "jrsdComponent",
+  "name": null,
+  "html": "<div class=\"component\" id=\"jrsdComponent\">\n                            <label for=\"EA001201Frm_jrsdCode\" class=\"th\">중앙관서</label>\n                            <div class=\"td\">\n                                <select class=\"sel wFull\" id=\"EA001201Frm_jrsdCode\" name=\"jrsd\">\n                                    <option value=\"\">전체</option>\n                                </select>\n                            </div>\n                        </div>"
+ },
+ {
+  "id": "EA001201Frm_jrsdCode",
+  "name": "jrsd",
+  "html": "<select class=\"sel wFull\" id=\"EA001201Frm_jrsdCode\" name=\"jrsd\">\n                                    <option value=\"\">전체</option>\n                                </select>"
+ },
+ {
+  "id": "EA001201Frm_wdrLcgvCode",
+  "name": "",
+  "html": "<select class=\"sel\" id=\"EA001201Frm_wdrLcgvCode\" title=\"시도\">\n                                        <option value=\"\">전체</option>\n                                    </select>"
+ }
+]
