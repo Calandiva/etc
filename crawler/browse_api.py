@@ -18,18 +18,25 @@ def params(year, page, per=100, basis="2", jrsd="", lcgv="", sysse=""):
         "basisCode":basis,"wdrLcgvCode":lcgv,"labSfrndCode":"",
         "selectedMultiText":"","selectedMultiType":"","selectedMultiSysSeCode":""}
 
-def call(page, p):
-    """페이지 컨텍스트에서 폼 인코딩 POST → JSON. jQuery 있으면 $.ajax, 없으면 fetch."""
-    return page.evaluate("""async (args)=>{
+def call(page, p, tries=3):
+    js='''async (args)=>{
       const [ep, data] = args;
       const body = Object.entries(data).map(([k,v])=>encodeURIComponent(k)+'='+encodeURIComponent(v)).join('&');
-      const res = await fetch(ep, {method:'POST', credentials:'include',
-        headers:{'Content-Type':'application/x-www-form-urlencoded; charset=UTF-8','X-Requested-With':'XMLHttpRequest'},
-        body});
-      const txt = await res.text();
-      try { return {ok:true, status:res.status, json:JSON.parse(txt)}; }
-      catch(e){ return {ok:false, status:res.status, text:txt.slice(0,500)}; }
-    }""", [DATA_EP, p])
+      try {
+        const res = await fetch(ep, {method:'POST', credentials:'same-origin',
+          headers:{'Content-Type':'application/x-www-form-urlencoded; charset=UTF-8','X-Requested-With':'XMLHttpRequest'},
+          body});
+        const txt = await res.text();
+        try { return {ok:true, status:res.status, json:JSON.parse(txt)}; }
+        catch(e){ return {ok:false, status:res.status, text:txt.slice(0,500)}; }
+      } catch(e){ return {ok:false, fetchError:String(e)}; }
+    }'''
+    last=None
+    for _ in range(tries):
+        r=page.evaluate(js, [DATA_EP, p])
+        if r.get("ok") or (isinstance(r,dict) and "json" in r): return r
+        last=r; page.wait_for_timeout(1200)
+    return last or {"ok":False}
 
 def find_list(o, depth=0):
     if depth>5: return None
@@ -81,15 +88,28 @@ def run(mode="api"):
         for attempt in range(5):
             try: page.goto(LIST_PAGE, wait_until="domcontentloaded", timeout=60000); page.wait_for_timeout(3500); break
             except Exception as e: print("goto 재시도",attempt+1,e); page.wait_for_timeout(3000)
-        def opts(sel):
+        def read_opts(sel):
             try:
                 return page.eval_on_selector(sel,
-                  "el=>[...el.options].map(o=>[o.value,o.text]).filter(o=>o[0]&&o[0]!=='')")
+                  "el=>[...el.options].map(o=>[o.value,o.text]).filter(o=>o[0]&&o[0]!=='')") or []
             except Exception: return []
-        # 국고: 중앙관서(jrsdCode), 지방: 지자체(wdrLcgvCode) 코드 목록
-        page.wait_for_timeout(1500)
-        jrsd=opts("#EA001201Frm_jrsdCode, select[id$=_jrsdCode]")
-        lcgv=opts("#EA001201Frm_wdrLcgvCode, select[id$=_wdrLcgvCode]")
+        def load_codes(basis, sel):
+            # 국고/지방 라디오·select 선택 → change → 옵션 로드 대기
+            try:
+                page.evaluate("""(b)=>{
+                  const set=el=>{if(!el)return; el.value=b; el.dispatchEvent(new Event('change',{bubbles:true}));};
+                  set(document.querySelector('#EA001201Frm_basisCode, select[id$=_basisCode]'));
+                  document.querySelectorAll('input[name*=basisCode],input[name*=ifpbntSysSe]').forEach(r=>{
+                    if(r.value===b){r.checked=true;r.dispatchEvent(new Event('change',{bubbles:true}));}});
+                }""", basis)
+            except Exception: pass
+            for _ in range(12):
+                page.wait_for_timeout(700)
+                o=read_opts(sel)
+                if o: return o
+            return read_opts(sel)
+        jrsd=load_codes("1","#EA001201Frm_jrsdCode, select[id$=_jrsdCode]")
+        lcgv=load_codes("2","#EA001201Frm_wdrLcgvCode, select[id$=_wdrLcgvCode]")
         (RB/"codes.json").write_text(json.dumps({"jrsd":jrsd,"lcgv":lcgv},ensure_ascii=False,indent=1),encoding="utf-8")
         print(f"중앙관서 {len(jrsd)}개, 지자체 {len(lcgv)}개")
         # 국고+지방 모두 시도. 국고는 중앙관서 필수라 basis=2(지방)부터, 국고는 sysse로 우회 시도
