@@ -131,6 +131,32 @@ def run(mode="api"):
             }""")
             (RB/"js-download.json").write_text(json.dumps(jsinfo,ensure_ascii=False,indent=1)[:400000],encoding="utf-8")
             print("JS 추출:",jsinfo.get("jsLen"),"함수",jsinfo.get("funcNames"))
+
+        # ★ 자치단체/중앙관서 코드 목록 API 호출 (그동안 못 찾던 코드 소스)
+        try:
+            codes=page.evaluate("""async ()=>{
+              const out={};
+              async function post(url, body){
+                try{ const r=await fetch(url,{method:'POST',credentials:'include',
+                  headers:{'Content-Type':'application/x-www-form-urlencoded; charset=UTF-8','X-Requested-With':'XMLHttpRequest'},
+                  body: body||''});
+                  const t=await r.text(); try{return {status:r.status,json:JSON.parse(t)};}catch(e){return {status:r.status,text:t.slice(0,400)};} }
+                catch(e){ return {err:String(e)}; }
+              }
+              out.wdrLcgv = await post('/ea/getWdrLcgvCodeList.do','basisCode=2');
+              out.labSfrnd = await post('/ea/getLabSfrndCodeList.do','basisCode=2');
+              out.combo = await post('/comm/retrieveCommComboList.do','');
+              return out;
+            }""")
+            (RB/"code-api.json").write_text(json.dumps(codes,ensure_ascii=False,indent=1)[:200000],encoding="utf-8")
+            def cnt(x):
+                j=x.get("json") if isinstance(x,dict) else None
+                it=find_list(j) if j else None
+                return len(it) if it else 0
+            print("자치단체코드:",cnt(codes.get("wdrLcgv",{})),"labSfrnd:",cnt(codes.get("labSfrnd",{})))
+        except Exception as e:
+            (RB/"code-api.json").write_text(json.dumps({"error":str(e)},ensure_ascii=False),encoding="utf-8")
+            print("코드 API 실패:",e)
         except Exception as e:
             (RB/"js-download.json").write_text(json.dumps({"error":str(e)},ensure_ascii=False),encoding="utf-8")
             print("JS 추출 실패:",e)
