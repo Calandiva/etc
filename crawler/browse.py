@@ -16,6 +16,17 @@ ROOT = HERE.parent
 sys.path.insert(0, str(HERE))
 from model import analyze                                        # noqa: E402
 
+def _goto(page, url, tries=3):
+    last=None
+    for i in range(tries):
+        try:
+            page.goto(url, wait_until="domcontentloaded", timeout=60000)
+            page.wait_for_timeout(2500); return
+        except Exception as e:
+            last=e; print(f"  goto 재시도 {i+1}/{tries}: {e}")
+            page.wait_for_timeout(3000)
+    raise last
+
 DATA = ROOT / "data"
 RB = DATA / "recon-browser"
 LIST_URL = "https://www.bojo.go.kr/ea/getEA001201View.do"
@@ -192,9 +203,16 @@ def run(mode):
             br.close(); return
 
         # collect
+        RB.mkdir(parents=True, exist_ok=True)
         all_rows=[]
-        for y in years:
+        for yi,y in enumerate(years):
             do_search(page, y)
+            if yi==0:
+                try:
+                    (RB/"collect-tableWrap.html").write_text(
+                        page.eval_on_selector("#tableWrap","el=>el.innerHTML") or "", encoding="utf-8")
+                    page.screenshot(path=str(RB/"collect-searched.png"), full_page=True)
+                except Exception: pass
             picked=pick_data_table(read_tables(page))
             if not picked:
                 print(f"{y}년: 목록 표를 찾지 못함"); continue
