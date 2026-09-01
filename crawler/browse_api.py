@@ -75,12 +75,12 @@ def post(page, ep, params, tries=3):
         last = r; page.wait_for_timeout(1000)
     return last or {"ok": False}
 
-def search_params(year, page_no, per, basis, lcgv):
+def search_params(year, page_no, per, basis, lcgv, lab=""):
     return {"currentPageNum": str(page_no), "nPageSize": str(per), "countPerPageNum": str(per),
         "fiscalyear": str(year), "bsnsyear": str(year), "jrsdCode": "",
         "excInsttNm": "", "ddtlbzNm": "", "dcsnBeginDe": "", "dcsnEndDe": "",
         "ifpbntSysSeCode": "", "sortOrder": "", "searchFilterYn": "N",
-        "basisCode": basis, "wdrLcgvCode": lcgv, "labSfrndCode": "",
+        "basisCode": basis, "wdrLcgvCode": lcgv, "labSfrndCode": lab,
         "selectedMultiText": "", "selectedMultiType": "", "selectedMultiSysSeCode": ""}
 
 def run(mode="api"):
@@ -117,53 +117,52 @@ def run(mode="api"):
         dbg.append({"lcgvCount": len(codes), "sample": codes[:5]})
         if max_codes: codes = codes[:max_codes]
 
-        # ★ 엑셀 다운로드 시험(서버 스트리밍 → 조회상한 우회 가능성). 바이트를 base64로 회수.
+        # ★ 시도 아래 시군구(labSfrndCode) 목록 확보 후 시군구 단위로 조회(범위 초과 회피)
+        def lab_codes(sido_code):
+            r = post(page, LAB_EP, {"wdrLcgvCode": sido_code, "basisCode": "2"})
+            its = find_list(r.get("json")) if isinstance(r, dict) and r.get("json") else None
+            out = []
+            if its:
+                k0 = list(its[0].keys())
+                ck = next((k for k in k0 if re.search(r"code|cd", k, re.I)), k0[0])
+                nk2 = next((k for k in k0 if re.search(r"nm|name|text", k, re.I)), (k0[1] if len(k0)>1 else k0[0]))
+                out = [(str(it.get(ck,"")).strip(), str(it.get(nk2,"")).strip()) for it in its if str(it.get(ck,"")).strip()]
+            return out, r
+        # 첫 시도로 시군구 API 응답 구조 저장
         if codes:
-            c0 = codes[0][0]
-            xls = page.evaluate("""async (a)=>{
-              const [ep, body] = a;
-              try{
-                const r = await fetch(ep, {method:'POST', credentials:'include',
-                  headers:{'Content-Type':'application/x-www-form-urlencoded; charset=UTF-8'}, body});
-                const ct = r.headers.get('content-type')||'';
-                const buf = await r.arrayBuffer();
-                let bin=''; const bytes=new Uint8Array(buf);
-                for(let i=0;i<bytes.length && i<8000000;i++) bin+=String.fromCharCode(bytes[i]);
-                return {status:r.status, ct, len:bytes.length, b64: btoa(bin), head: Array.from(bytes.slice(0,4))};
-              }catch(e){ return {err:String(e)}; }
-            }""", [EXCEL_EP, "&".join(f"{k}={v}" for k,v in search_params(years[0],1,10000,"2",c0).items())])
-            info = {k:v for k,v in xls.items() if k!="b64"}
-            (RB/"excel-test.json").write_text(json.dumps(info, ensure_ascii=False, indent=1), encoding="utf-8")
-            print("엑셀 시험:", info)
-            if xls.get("b64") and xls.get("len",0) > 200:
-                import base64
-                ext = "xlsx" if xls.get("head",[0])[0]==80 else "bin"  # PK=0x50
-                (RB/f"excel-sample.{ext}").write_bytes(base64.b64decode(xls["b64"]))
-                print(f"엑셀 파일 저장: excel-sample.{ext} ({xls['len']} bytes)")
+            labs0, rr0 = lab_codes(codes[0][0])
+            (RB/"lab-codes.json").write_text(json.dumps({"resp":rr0,"parsed":labs0[:40]},ensure_ascii=False)[:120000],encoding="utf-8")
+            print("시군구 코드(", codes[0][1], "):", len(labs0), labs0[:5])
+            dbg.append({"sido":codes[0][1],"labCount":len(labs0),"labSample":labs0[:5]})
 
-        # 2) 코드별 지방보조사업 검색 (유효 코드 → 조회상한 회피)
+        # 2) 시도→시군구별 지방보조사업 검색 (시군구 단위 → 조회상한 회피)
+        def collect(y, sido_nm, lcgv, lab, label):
+            page_no = 1; total = 0
+            while page_no <= max_pages:
+                rr = post(page, SEARCH_EP, search_params(y, page_no, per, "2", lcgv, lab))
+                js = rr.get("json") if isinstance(rr, dict) else None
+                err = js.get("ERROR-0000") if isinstance(js, dict) else None
+                its = find_list(js) if js else None
+                if not its:
+                    if page_no == 1 and len([d for d in dbg if d.get("firstErr")]) < 8:
+                        dbg.append({"label": label, "y": y, "firstErr": err})
+                    return total
+                m, keys = map_items(its)
+                if not any(d.get("mappedTo") for d in dbg):
+                    dbg.append({"mappedTo": m, "itemKeys": keys[:30]})
+                got = to_rows(its, y, "2", m, label)
+                all_rows.extend(got); total += len(got)
+                if len(its) < per: break
+                page_no += 1; time.sleep(delay)
+            return total
         for code, nm in codes:
-            for y in years:
-                page_no = 1
-                while page_no <= max_pages:
-                    rr = post(page, SEARCH_EP, search_params(y, page_no, per, "2", code))
-                    js = rr.get("json") if isinstance(rr, dict) else None
-                    err = js.get("ERROR-0000") if isinstance(js, dict) else None
-                    its = find_list(js) if js else None
-                    if not its:
-                        if page_no == 1 and len([d for d in dbg if d.get("firstErr")]) < 6:
-                            dbg.append({"code": code, "nm": nm, "y": y, "firstErr": err})
-                        break
-                    m, keys = map_items(its)
-                    if not any(d.get("mappedTo") for d in dbg):
-                        dbg.append({"mappedTo": m, "itemKeys": keys[:30]})
-                    got = to_rows(its, y, "2", m, f"지방/{nm}")
-                    all_rows.extend(got)
-                    if page_no == 1:
-                        print(f"지방 {nm}({code}) {y}: {len(got)}행 (누적 {len(all_rows)})")
-                    if len(its) < per: break
-                    page_no += 1; time.sleep(delay)
-                time.sleep(delay*0.5)
+            labs, _ = lab_codes(code)
+            targets = labs if labs else [("", nm)]
+            for lab, labnm in targets:
+                for y in years:
+                    n = collect(y, nm, code, lab, f"지방/{nm}/{labnm}" if lab else f"지방/{nm}")
+                    if n: print(f"{nm}/{labnm} {y}: {n}행 (누적 {len(all_rows)})")
+                    time.sleep(delay*0.4)
         br.close()
 
     # 중복 제거

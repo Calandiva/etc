@@ -25,6 +25,6 @@
   "rowSelector": "table tr",
   "maxPages": 3,
   "perPage": 100,
-  "maxCodes": 3
+  "maxCodes": 1
  }
 }
