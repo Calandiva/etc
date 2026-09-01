@@ -130,6 +130,7 @@ footer.site{border-top:1px solid var(--line);color:var(--muted);font-size:12px;p
   <nav class="tabs" role="tablist">
     <button role="tab" aria-selected="true" data-tab="guide">신고 가이드·포털</button>
     <button role="tab" aria-selected="false" data-tab="assess">사례 진단</button>
+    <button role="tab" aria-selected="false" data-tab="audit">정산 데이터 분석</button>
     <button role="tab" aria-selected="false" data-tab="db">실제 사례 DB</button>
     <button role="tab" aria-selected="false" data-tab="rank">위험도 순위</button>
     <button role="tab" aria-selected="false" data-tab="report">신고서 생성</button>
@@ -259,6 +260,46 @@ footer.site{border-top:1px solid var(--line);color:var(--muted);font-size:12px;p
   </div>
 </section>
 
+<!-- ══════════ TAB · 정산 데이터 분석 ══════════ -->
+<section class="tabpane" id="pane-audit" hidden>
+  <p class="eyebrow">SETTLEMENT DATA ANALYSIS</p>
+  <h2>보조사업 정산 내역 분석 — 부정 확률 순위</h2>
+  <p>공시된 <b>실제 보조사업 집행·정산 내역</b>을 올리면, 회계부정 적발에 쓰이는 정량 지표 15종으로
+  사업별 부정 확률을 계산해 높은 순으로 정렬합니다. 데이터는 브라우저 안에서만 처리되며 어디로도 전송되지 않습니다.</p>
+
+  <div class="callout">
+    <b>데이터 가져오는 법</b> — 아래 공시 사이트에서 집행·정산 내역을 CSV/엑셀로 내려받아 그대로 올리세요.
+    컬럼명은 자동 인식합니다(보조사업명·보조사업자·거래처·계약방법·집행액·집행일자 등).
+    <div class="portalbtns" style="margin-top:10px">
+      <a href="https://bojo.go.kr/opn/ig/ig002/getIG002002QView.do" target="_blank" rel="noopener">보조금통합포털 집행현황 →</a>
+      <a href="https://www.bojo.go.kr/ea/getEA001101View.do" target="_blank" rel="noopener">보조사업자 정보공시(정산보고서) →</a>
+      <a href="https://opn.gosims.go.kr/opn/iz/iz000/getIZ000002QView.do" target="_blank" rel="noopener">e나라도움 통계센터 →</a>
+      <a href="https://www.data.go.kr/data/15097584/openapi.do" target="_blank" rel="noopener">공공데이터포털 국고보조금 API →</a>
+    </div>
+    <p style="margin:10px 0 0;font-size:13px">대량 수집은 저장소의 <code>fetch-bojo.mjs</code>를 쓰세요:
+    <code>node fetch-bojo.mjs api --key=&lt;인증키&gt; --pages=20</code> 또는 <code>node fetch-bojo.mjs file 집행현황.csv</code></p>
+  </div>
+
+  <div class="card" id="dropZone" style="border-style:dashed;text-align:center;padding:28px 20px">
+    <p style="margin:0 0 10px;font-weight:700">정산 내역 파일을 여기로 끌어다 놓으세요</p>
+    <p style="margin:0 0 14px;font-size:13px;color:var(--muted)">CSV · TSV · JSON (fetch-bojo.mjs 출력) 지원 — 엑셀은 CSV로 저장 후 업로드</p>
+    <div class="btnrow" style="justify-content:center;margin:0">
+      <button class="btn" id="pickFile">파일 선택</button>
+      <button class="btn ghost" id="pasteToggle">붙여넣기로 입력</button>
+      <button class="btn ghost" id="demoData">예시 데이터로 시연</button>
+    </div>
+    <input type="file" id="fileInput" accept=".csv,.tsv,.txt,.json" multiple hidden>
+  </div>
+  <div id="pasteBox" hidden style="margin-top:14px">
+    <label class="fld" for="pasteArea">정산 내역 붙여넣기 (첫 줄은 헤더)</label>
+    <textarea id="pasteArea" style="min-height:140px;font-family:var(--mono);font-size:13px"
+      placeholder="보조사업명,보조사업자,거래처,계약방법,비목,집행액,집행일자"></textarea>
+    <div class="btnrow"><button class="btn" id="runPaste">분석 실행</button></div>
+  </div>
+
+  <div id="auditResult" style="margin-top:22px"></div>
+</section>
+
 <!-- ══════════ TAB · 실제 사례 DB ══════════ -->
 <section class="tabpane" id="pane-db" hidden>
   <p class="eyebrow">VERIFIED CASE DATABASE</p>
@@ -326,6 +367,7 @@ footer.site{border-top:1px solid var(--line);color:var(--muted);font-size:12px;p
 </div></footer>
 
 <script src="cases.js"></script>
+<script src="audit.js"></script>
 <script>
 /* ── 탐지 로직 14종: 정부 SFDS 패턴 + 적발 사례 기반, weight = 심각도(회수 실적 기준) ── */
 const RULES=[
@@ -648,6 +690,185 @@ $("#dbList").addEventListener("click",e=>{
     amount:c.amt, memo:`[참고 실제 사례] ${c.d}\n출처: ${SRC[c.src].n}`, sig:{}, docs:{}});
   c.logic.forEach(l=>{ const first=document.querySelector(`#rule-${l} input[type=checkbox]`); if(first)first.checked=true; });
   updateBadges(); updateLive(); showTab("assess"); window.scrollTo({top:0});
+});
+
+/* ══════════ 정산 데이터 분석 ══════════ */
+const A_ALIAS={
+  project:["보조사업명","사업명","세부사업명","내역사업명","사업","과제명"],
+  grantor:["교부기관","소관기관","중앙관서","교부처","소관부처"],
+  recipient:["보조사업자","보조사업자명","수급자","수행기관","단체명","업체명","기관명"],
+  bizno:["사업자등록번호","보조사업자사업자번호","사업자번호"],
+  ceo:["대표자","대표자명","대표"],
+  item:["비목","비목명","예산비목","계정과목","지출항목","세목"],
+  vendor:["거래처","거래처명","지급처","수취인","계약상대자","업체","공급자"],
+  vendorBizno:["거래처사업자번호","공급자사업자번호","계약상대자사업자번호"],
+  method:["계약방법","계약방식","구매방법","계약구분"],
+  amount:["집행액","지출액","금액","계약금액","지급액","집행금액","결제금액"],
+  grant:["교부액","교부금액","보조금액","지원금액","예산액"],
+  date:["집행일자","지출일자","거래일자","계약일자","지급일","일자","결제일"],
+  doc:["증빙","증빙유형","증빙서류","세금계산서번호","증빙번호"],
+  note:["비고","적요","내용","산출내역","성명"],
+};
+const anorm=x=>String(x??"").replace(/[\s"']/g,"").toLowerCase();
+function aParse(text){
+  text=text.replace(/^﻿/,"");
+  const head=text.split("\n")[0];
+  const delim=(head.match(/\t/g)||[]).length>(head.match(/,/g)||[]).length?"\t":",";
+  const rows=[];let row=[],cell="",q=false;
+  for(let i=0;i<text.length;i++){const c=text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){cell+='"';i++;} else q=false; } else cell+=c; }
+    else if(c==='"')q=true;
+    else if(c===delim){row.push(cell);cell="";}
+    else if(c==="\n"){row.push(cell);rows.push(row);row=[];cell="";}
+    else if(c!=="\r")cell+=c;}
+  if(cell||row.length){row.push(cell);rows.push(row);}
+  return rows.filter(r=>r.some(c=>String(c).trim()!==""));
+}
+function aMap(h){const m={};for(const[k,ns]of Object.entries(A_ALIAS)){
+  let i=h.findIndex(x=>ns.some(n=>anorm(x)===anorm(n)));
+  if(i<0)i=h.findIndex(x=>ns.some(n=>anorm(x).includes(anorm(n))));
+  if(i>=0)m[k]=i;} return m;}
+const aNum=v=>{const n=Number(String(v??"").replace(/[^0-9.-]/g,""));return Number.isFinite(n)?n:0;};
+function aRows(table){
+  let hi=0,best=-1;
+  for(let i=0;i<Math.min(5,table.length);i++){const n=Object.keys(aMap(table[i])).length;if(n>best){best=n;hi=i;}}
+  if(best<3) throw new Error("컬럼을 인식하지 못했습니다. 헤더에 보조사업명·거래처·집행액 등이 포함되어야 합니다. 인식된 헤더: "+(table[0]||[]).slice(0,8).join(", "));
+  const m=aMap(table[hi]),p=(r,k)=>m[k]!=null?String(r[m[k]]??"").trim():"";
+  return table.slice(hi+1).map(r=>({project:p(r,"project"),grantor:p(r,"grantor"),recipient:p(r,"recipient"),
+    bizno:p(r,"bizno"),ceo:p(r,"ceo"),item:p(r,"item"),vendor:p(r,"vendor"),vendorBizno:p(r,"vendorBizno"),
+    method:p(r,"method"),amount:aNum(p(r,"amount")),grant:aNum(p(r,"grant")),date:p(r,"date"),
+    doc:p(r,"doc"),note:p(r,"note")})).filter(r=>r.project||r.recipient||r.amount);
+}
+function ingest(text,name){
+  let rows;
+  const t=text.trim();
+  if(t.startsWith("{")||t.startsWith("[")){
+    const j=JSON.parse(t); rows=Array.isArray(j)?j:(j.rows||j.data||[]);
+    rows=rows.map(r=>({...r,amount:aNum(r.amount),grant:aNum(r.grant)}));
+    if(!rows.length) throw new Error("JSON에 rows 배열이 없습니다.");
+  } else rows=aRows(aParse(text));
+  if(!rows.length) throw new Error("읽을 수 있는 데이터 행이 없습니다.");
+  runAudit(rows,name);
+}
+const money=v=>{const a=Math.abs(v);
+  return a>=100000000?(v/100000000).toFixed(1).replace(/\.0$/,"")+"억원"
+    :a>=10000?Math.round(v/10000).toLocaleString()+"만원":v.toLocaleString()+"원";};
+let AUDIT_LAST=[];
+function runAudit(rows,name){
+  const res=auditProjects(rows); AUDIT_LAST=res;
+  const el=$("#auditResult");
+  if(!res.length){el.innerHTML='<p class="empty">분석할 사업이 없습니다.</p>';return;}
+  const hi=res.filter(p=>p.prob>=60).length, mid=res.filter(p=>p.prob>=30&&p.prob<60).length;
+  const totAmt=res.reduce((s,p)=>s+p.total,0);
+  el.innerHTML=`
+   <div class="grid cols3" style="margin-bottom:18px">
+     <div class="card"><p class="eyebrow" style="margin:0 0 4px">분석한 보조사업</p><div class="bignum">${res.length}건</div>
+       <p style="margin:4px 0 0;font-size:13px;color:var(--muted)">거래 ${rows.length.toLocaleString()}건 · ${esc(name)}</p></div>
+     <div class="card"><p class="eyebrow" style="margin:0 0 4px">고위험 사업</p><div class="bignum" style="color:var(--crit)">${hi}건</div>
+       <p style="margin:4px 0 0;font-size:13px;color:var(--muted)">중위험 ${mid}건 · 부정확률 60 이상이 고위험</p></div>
+     <div class="card"><p class="eyebrow" style="margin:0 0 4px">집행액 합계</p><div class="bignum">${money(totAmt)}</div>
+       <p style="margin:4px 0 0;font-size:13px;color:var(--muted)">고위험 사업 ${money(res.filter(p=>p.prob>=60).reduce((s,p)=>s+p.total,0))}</p></div>
+   </div>
+   <div class="btnrow" style="margin:0 0 14px"><button class="btn ghost" id="expAudit">분석 결과 CSV 저장</button></div>
+   ${res.map((p,i)=>{
+     const lv=p.prob>=60?"r1":p.prob>=30?"r2":"r3";
+     return `<div class="dbrow ${lv}">
+       <div class="dbtop"><span class="rank">${String(i+1).padStart(3,"0")}</span>
+         <span class="ttl">${esc(p.project||"(사업명 미상)")}</span>
+         <span class="chip ${p.prob>=60?"crit":p.prob>=30?"warn":"good"}">부정확률 ${p.prob}</span></div>
+       <div class="dbmeta" style="margin:6px 0 10px">
+         <span><span class="lbl">보조사업자</span> <b>${esc(p.recipient||"미상")}</b></span>
+         <span><span class="lbl">집행</span> <b>${money(p.total)}</b> / ${p.n}건</span>
+         ${p.grant?`<span><span class="lbl">교부액</span> <b>${money(p.grant)}</b> (집행률 ${(p.total/p.grant*100).toFixed(1)}%)</span>`:""}
+         <span><span class="lbl">거래처</span> <b>${p.vendors}곳</b></span>
+       </div>
+       ${p.fired.length?p.fired.map(f=>{const R=AUDIT_RULES.find(r=>r.id===f.id);return `
+         <details class="rule" style="margin-bottom:8px">
+           <summary><span class="chip ${f.score>=80?"crit":f.score>=50?"warn":"w"}">${f.score}</span>
+             <span class="rname">${esc(R.name)}</span><span class="chip w">가중치 ${R.w}</span></summary>
+           <div class="rbody">
+             <p style="margin:10px 0 6px"><b>탐지 내용:</b> ${esc(f.detail)}</p>
+             <p style="margin:0 0 8px;font-size:13px;color:var(--muted)">${esc(R.why)}</p>
+             ${f.evid&&f.evid.length?`<p class="subhead">해당 거래 예시</p>
+               <div class="tablewrap"><table style="min-width:520px">
+                 <thead><tr><th>일자</th><th>거래처</th><th>비목</th><th>계약방법</th><th style="text-align:right">금액</th></tr></thead>
+                 <tbody>${f.evid.map(e=>`<tr><td>${esc(e.date||"-")}</td><td>${esc(e.vendor||"-")}</td>
+                   <td>${esc(e.item||"-")}</td><td>${esc(e.method||"-")}</td>
+                   <td style="text-align:right;font-variant-numeric:tabular-nums">${(+e.amount||0).toLocaleString()}</td></tr>`).join("")}</tbody>
+               </table></div>`:""}
+             <p class="subhead">신고 시 확보할 증빙</p>
+             <ul class="tight">${R.ask.map(a=>`<li>${esc(a)}</li>`).join("")}</ul>
+           </div>
+         </details>`;}).join(""):'<p class="missing">발동한 정량 룰이 없습니다 — 이 데이터 범위에서는 이상 징후가 확인되지 않았습니다.</p>'}
+       <div class="btnrow" style="margin-top:10px"><button class="btn ghost" data-toassess="${i}">이 사업으로 신고 진단</button></div>
+     </div>`;}).join("")}`;
+  $("#expAudit").addEventListener("click",exportAudit);
+}
+function exportAudit(){
+  const head=["순위","부정확률","보조사업명","보조사업자","거래건수","집행액","교부액","거래처수","발동룰","탐지내용"];
+  const lines=[head.join(",")].concat(AUDIT_LAST.map((p,i)=>[
+    i+1,p.prob,p.project,p.recipient,p.n,p.total,p.grant,p.vendors,
+    p.fired.map(f=>AUDIT_RULES.find(r=>r.id===f.id).name).join(" / "),
+    p.fired.map(f=>f.detail).join(" / ")
+  ].map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")));
+  saveText("﻿"+lines.join("\n"),"정산분석_부정확률순위.csv");
+}
+async function saveText(data,filename){
+  if(window.claude?.use){ const d=await claude.use("downloads");
+    if(d){ try{ await d.save({filename,data}); }catch(e){} return; } }
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([data],{type:"text/csv;charset=utf-8"}));
+  a.download=filename;a.click();URL.revokeObjectURL(a.href);
+}
+$("#auditResult").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-toassess]"); if(!b)return;
+  const p=AUDIT_LAST[+b.dataset.toassess];
+  const MAPR={split:"shell",concen:"family",nobid:"shell",benford:"forge",round:"forge",yearend:"misuse",
+    dup:"double",repeat:"forge",related:"family",weekend:"forge",exact:"misuse",labor:"ghost",
+    newvend:"shell",nodoc:"forge",neg:"taxcxl"};
+  editId=null; $("#editNotice").hidden=true;
+  writeForm({name:(p.project||"정산분석 사업").slice(0,40),target:p.recipient,type:"국고보조금",
+    amount:Math.round(p.total/10000),
+    memo:`[정산 데이터 분석 결과] 부정확률 ${p.prob}\n거래 ${p.n}건 / 집행 ${p.total.toLocaleString()}원 / 거래처 ${p.vendors}곳\n`
+      +p.fired.map(f=>`· ${AUDIT_RULES.find(r=>r.id===f.id).name}: ${f.detail}`).join("\n"),
+    sig:{},docs:{}});
+  new Set(p.fired.map(f=>MAPR[f.id]).filter(Boolean)).forEach(id=>{
+    const c=document.querySelector(`#rule-${id} input[type=checkbox]`); if(c)c.checked=true;});
+  updateBadges();updateLive();showTab("assess");window.scrollTo({top:0});
+});
+/* 입력 핸들러 */
+function readFiles(files){
+  [...files].forEach(f=>{const rd=new FileReader();
+    rd.onload=()=>{try{ingest(String(rd.result),f.name);}catch(err){alert("분석 실패: "+err.message);}};
+    rd.readAsText(f,"utf-8");});
+}
+$("#pickFile").addEventListener("click",()=>$("#fileInput").click());
+$("#fileInput").addEventListener("change",e=>readFiles(e.target.files));
+$("#pasteToggle").addEventListener("click",()=>{const b=$("#pasteBox");b.hidden=!b.hidden;if(!b.hidden)$("#pasteArea").focus();});
+$("#runPaste").addEventListener("click",()=>{
+  const t=$("#pasteArea").value.trim();
+  if(!t){alert("분석할 내역을 붙여넣으세요.");return;}
+  try{ingest(t,"붙여넣기 입력");}catch(err){alert("분석 실패: "+err.message);}});
+const dz=$("#dropZone");
+["dragover","dragenter"].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.style.borderColor="var(--accent)";}));
+["dragleave","drop"].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.style.borderColor="";}));
+dz.addEventListener("drop",e=>{if(e.dataTransfer.files.length)readFiles(e.dataTransfer.files);});
+$("#demoData").addEventListener("click",()=>{
+  /* 시연용 가상 데이터 — 실제 사업이 아님 */
+  const rows=[],vs=["가상사","나테크","다물산","라기획","마엔지","바디자인","사물류","아정보"];
+  let s=20240101,rnd=()=>((s=s*1103515245+12345&0x7fffffff)/0x7fffffff);
+  for(let i=0;i<14;i++)rows.push({project:"[예시] ○○협회 역량강화사업",recipient:"○○협회",bizno:"111-22-33333",
+    ceo:"홍길동",vendor:"길동기획",vendorBizno:"111-22-33333",method:"수의계약",item:"용역비",
+    amount:19400000+i*10000,date:`2024-12-${String(10+i%18).padStart(2,"0")}`,doc:"",grant:600000000,note:""});
+  for(let i=0;i<70;i++){const amt=Math.round(Math.exp(12.4+rnd()*3.3));
+    rows.push({project:"[예시] △△재단 문화지원사업",recipient:"△△재단",bizno:"222-33-44444",ceo:"김철수",
+      vendor:vs[Math.floor(rnd()*8)],vendorBizno:"9"+Math.floor(rnd()*1e9),
+      method:rnd()<.75?"경쟁입찰":"수의계약",item:["운영비","재료비","여비","용역비","인건비"][Math.floor(rnd()*5)],
+      amount:amt,date:`2024-${String(1+Math.floor(rnd()*12)).padStart(2,"0")}-${String(1+Math.floor(rnd()*26)).padStart(2,"0")}`,
+      doc:rnd()<.9?"세금계산서":"카드",grant:1500000000,note:""});}
+  runAudit(rows,"예시 데이터(가상)");
+  $("#auditResult").insertAdjacentHTML("afterbegin",
+    '<div class="callout warn" style="margin-bottom:14px"><b>시연용 가상 데이터입니다.</b> 실재하는 사업·단체가 아니며, 엔진 동작 확인용입니다. 실제 분석은 공시 사이트에서 내려받은 데이터를 올려 주세요.</div>');
 });
 
 renderRules(); writeForm(null); initDB(); renderDB();
