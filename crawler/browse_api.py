@@ -202,18 +202,20 @@ def run(mode="api"):
 
         # 1) 보조사업자구분(ifpbntSysSeCode) 부분집합으로 좁혀 조회 — 관서 코드 불필요
         probe=[]
-        SYS=[("002","사회복지시설"),("003","보육시설"),("004","창업진흥원"),("001","일반")]
+        SYS=[("","전체"),("002","사회복지시설"),("003","보육시설")]
+        # 형식 검증용: 5자리 시군구 / 2·4자리 시도 후보를 wdrLcgvCode에 넣어본다
+        LCGV_TEST=[("11110","서울 종로구"),("11680","서울 강남구"),("26110","부산 중구"),
+                   ("41111","수원 장안구"),("29110","광주 동구"),("11000","서울(4자리계열11)"),
+                   ("1100000000","서울10자리"),("3611000000","세종10자리"),("2611000000","부산중구10자리")]
         def q(y,basis,sysse,lcgv):
             return dict(currentPageNum="1",countPerPageNum=str(per),fiscalyear=str(y),bsnsyear=str(y),
                 jrsdCode="",excInsttNm="",ddtlbzNm="",dcsnBeginDe="",dcsnEndDe="",
                 ifpbntSysSeCode=sysse,sortOrder="",searchFilterYn="N",basisCode=basis,
                 wdrLcgvCode=lcgv,labSfrndCode="",selectedMultiText="",selectedMultiType="",selectedMultiSysSeCode=sysse)
         plans2=[]
-        for y in years:
-            for sc,snm in SYS:
-                plans2.append((y,"1",sc,"",f"국고/{snm}"))
-                for lc,lnm in SIDO:
-                    plans2.append((y,"2",sc,lc,f"지방/{snm}/{lnm}"))
+        y0=years[0]
+        for lc,lnm in LCGV_TEST:
+            plans2.append((y0,"2","",lc,f"지방/{lnm}({lc})"))
         for (y,basis,sysse,lcgv,label) in plans2:
             if qcount[0]>=max_queries: break
             qcount[0]+=1

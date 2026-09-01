@@ -26,7 +26,7 @@
   "rowSelector": "table tr",
   "maxPages": 5,
   "perPage": 100,
-  "maxQueries": 1,
+  "maxQueries": 40,
   "minWindowDays": 5
  }
 }
