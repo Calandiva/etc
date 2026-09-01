@@ -24,8 +24,9 @@
   "maxProjects": 120,
   "delayMs": 700,
   "rowSelector": "table tr",
-  "maxPlans": 6,
   "maxPages": 5,
-  "perPage": 100
+  "perPage": 100,
+  "maxQueries": 40,
+  "minWindowDays": 5
  }
 }
