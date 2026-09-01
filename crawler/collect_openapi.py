@@ -12,7 +12,8 @@ from model import analyze
 DATA=ROOT/"data"; RB=DATA/"recon-browser"
 # 기획재정부_국고보조금 정보 (여러 오퍼레이션 중 보조사업 목록/집행)
 ENDPOINTS=[
-  "https://apis.data.go.kr/1051000/MoefOpenAPI/T_OPD_PRMSCT_SBBGST",  # 보조사업 현황
+  "https://apis.data.go.kr/1051000/MoefOpenAPI/T_OPD_PRMSCT_SBBGST",   # 기획재정부 국고보조금 정보
+  "http://apis.data.go.kr/1051000/MoefOpenAPI/T_OPD_PRMSCT_SBBGST",    # http 폴백
 ]
 FIELD={"project":["bsnsNm","사업명","보조사업명","dtlBsnsNm","sbsdBsnsNm"],
  "recipient":["excInsttNm","보조사업자","수행기관","insttNm"],
@@ -80,24 +81,25 @@ def run():
     # 파라미터 조합 자동 탐색(어떤 조합이 데이터를 주는지)
     probe=[]
     for ep in ENDPOINTS:
-        for variant in [
-            {"resultType":"json"}, {"type":"json"}, {"dataType":"json"},
-            {"_type":"json"}, {},  # 기본(XML)
-        ]:
-            q=dict(serviceKey=key, pageNo=1, numOfRows=10, **variant)
+        for variant in [{"resultType":"json"}, {"type":"json"}, {}]:
+            q=dict(serviceKey=key, pageNo=1, numOfRows=5, **variant)
             url=f"{ep}?"+urllib.parse.urlencode(q, safe="%")
             try: body=get(url)
-            except Exception as e: probe.append({"variant":variant,"error":str(e)}); continue
+            except Exception as e: probe.append({"ep":ep,"variant":variant,"error":str(e)}); time.sleep(3); continue
             items=None
             try: items=find_items(json.loads(body))
             except Exception: items=xml_items(body)
             probe.append({"variant":variant,"len":len(body),"items":(len(items) if items else 0),"head":body[:160]})
             if items:
-                probe.append({"WORKING":variant}); break
+                probe.append({"WORKING":variant,"ep":ep}); break
+            time.sleep(3)
+        if any(p.get("WORKING") for p in probe): break
     (RB/"openapi-probe.json").write_text(json.dumps(probe,ensure_ascii=False,indent=1),encoding="utf-8")
-    working=next((p["WORKING"] for p in probe if p.get("WORKING")), {"resultType":"json"})
-    print("작동 조합:", working)
-    for ep in ENDPOINTS:
+    wp=next((p for p in probe if p.get("WORKING")), None)
+    working=wp["WORKING"] if wp else {"resultType":"json"}
+    use_eps=[wp["ep"]] if wp else ENDPOINTS[:1]
+    print("작동 조합:", working, "엔드포인트:", use_eps)
+    for ep in use_eps:
         page=1
         while page<=int(os.environ.get("MAX_PAGES","30")):
             qs=urllib.parse.urlencode(dict(serviceKey=key,pageNo=page,numOfRows=500,**working), safe="%")
