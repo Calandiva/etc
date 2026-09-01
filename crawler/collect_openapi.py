@@ -29,6 +29,18 @@ def get(url):
     req=urllib.request.Request(url, headers={"User-Agent":"SubsidyResearch/1.0"})
     with urllib.request.urlopen(req, timeout=30) as r:
         return r.read().decode("utf-8","replace")
+def xml_items(text):
+    import xml.etree.ElementTree as ET
+    try: root=ET.fromstring(text)
+    except Exception: return None
+    # 에러 헤더 확인
+    rc=root.findtext(".//resultCode") or root.findtext(".//resultCode")
+    items=root.findall(".//item")
+    if not items: return None if (rc and rc not in ("0","00")) else []
+    out=[]
+    for it in items:
+        out.append({c.tag: (c.text or "") for c in it})
+    return out
 def find_items(o,d=0):
     if d>6: return None
     if isinstance(o,list) and o and isinstance(o[0],dict): return o
@@ -62,14 +74,18 @@ def run():
     for ep in ENDPOINTS:
         page=1
         while page<=int(os.environ.get("MAX_PAGES","30")):
-            qs=urllib.parse.urlencode({"serviceKey":key,"pageNo":page,"numOfRows":500,"type":"json"}, safe="%")
+            qs=urllib.parse.urlencode({"serviceKey":key,"pageNo":page,"numOfRows":500,"resultType":"json"}, safe="%")
             url=f"{ep}?{qs}"
             try: body=get(url)
             except Exception as e: dbg.append({"ep":ep,"page":page,"error":str(e)}); break
             if page==1: (RB/"openapi-first.json").write_text(body[:200000],encoding="utf-8")
-            try: js=json.loads(body)
-            except Exception: dbg.append({"ep":ep,"page":page,"note":"JSON 아님","head":body[:200]}); break
-            items=find_items(js)
+            items=None
+            try:
+                js=json.loads(body); items=find_items(js)
+            except Exception:
+                items=xml_items(body)   # XML 응답 파싱
+                if items is None:
+                    dbg.append({"ep":ep,"page":page,"note":"파싱 실패","head":body[:200]}); break
             if not items: dbg.append({"ep":ep,"page":page,"note":"항목 없음","keys":list(js.keys())[:12] if isinstance(js,dict) else str(type(js))}); break
             rows,m,keys=to_rows(items)
             if page==1: dbg.append({"ep":ep,"itemKeys":keys[:30],"mappedTo":m})
