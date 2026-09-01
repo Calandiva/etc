@@ -148,6 +148,22 @@ def run(mode="api"):
         (RB/"real-request.json").write_text(json.dumps(real,ensure_ascii=False,indent=1)[:400000],encoding="utf-8")
         print("실제 요청 캡처:",len(real["reqs"]),"응답:",len(real["resps"]))
 
+        # ★ 모든 select의 옵션 덤프 (자치단체/중앙관서 실제 코드 형식 확인)
+        page.wait_for_timeout(3000)
+        selects=page.evaluate("""()=>[...document.querySelectorAll('select')].map(s=>({
+            id:s.id, name:s.name,
+            opts:[...s.options].slice(0,12).map(o=>[o.value,o.text]),
+            n:s.options.length}))""")
+        (RB/"all-selects.json").write_text(json.dumps(selects,ensure_ascii=False,indent=1),encoding="utf-8")
+        # 자치단체/중앙관서 관련 요소 outerHTML도
+        rel=page.evaluate("""()=>{
+            const out=[]; 
+            document.querySelectorAll('select,[id*=jrsd],[id*=Lcgv],[id*=lcgv]').forEach(el=>{
+              if(/jrsd|lcgv|자치|관서/i.test(el.id+el.name)) out.push({id:el.id,name:el.name,html:el.outerHTML.slice(0,1500)});
+            }); return out;}""")
+        (RB/"code-elements.json").write_text(json.dumps(rel,ensure_ascii=False,indent=1),encoding="utf-8")
+        print("select",len(selects),"개, 코드요소",len(rel),"개 덤프")
+
         def collect_window(year, basis, beg, end):
             """[beg,end] 창을 수집. 범위 초과면 반으로 분할 재귀."""
             if qcount[0]>=max_queries: return
