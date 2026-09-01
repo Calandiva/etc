@@ -180,8 +180,20 @@ def run(mode):
             # 조회 전 후보 버튼 가시성 진단
             search_btns=page.eval_on_selector_all("button,a,input[type=button],input[type=submit]",
               "els=>els.filter(e=>/조회|검색/.test(e.innerText||e.value||'')).map(e=>({tag:e.tagName,cls:e.className.slice(0,40),vis:e.offsetParent!==null,oc:(e.getAttribute('onclick')||'').slice(0,60)}))")
-            has_fsearch=page.evaluate("()=>({f_search:typeof f_search,fn_search:typeof window.fn_search,keys:Object.keys(window).filter(k=>/search/i.test(k)).slice(0,10)})")
+            has_fsearch=page.evaluate("()=>({f_search:typeof f_search,fn_search:typeof window.fn_search,keys:Object.keys(window).filter(k=>/search|retrieve|list/i.test(k)).slice(0,20)})")
+            # 검색 함수 소스 덤프 — 실제 엔드포인트/파라미터 확인
+            fnsrc={}
+            for fn in ["f_search","f_searchRetrieveInfoPblntfTrgetMngList"]:
+                try: fnsrc[fn]=page.evaluate(f"()=>typeof {fn}==='function'?{fn}.toString():'(없음)'")
+                except Exception as e: fnsrc[fn]=f"(err {e})"
+            (RB/"fn-source.txt").write_text("\n\n===== ".join(f"{k} =====\n{v}" for k,v in fnsrc.items()), encoding="utf-8")
+            # 모든 요청(무필터) 기록 시작
+            allreq=[]
+            page.on("request", lambda r: allreq.append({"m":r.method,"u":r.url[:160],
+                "rt":r.resource_type,"pd":(r.post_data or "")[:200]}))
             do_search(page, years[0])
+            page.wait_for_timeout(2000)
+            (RB/"all-requests.json").write_text(json.dumps(allreq[-60:],ensure_ascii=False,indent=1),encoding="utf-8")
             page.screenshot(path=str(RB/"02-searched.png"), full_page=True)
             (RB/"02-searched.html").write_text(page.content(), encoding="utf-8")
             # 결과를 표형으로 전환 시도(집계 파싱 쉬움)
