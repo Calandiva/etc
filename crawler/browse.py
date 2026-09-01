@@ -129,10 +129,31 @@ def run(mode):
             "SubsidyDisclosureResearch/1.0 (public data; github actions)"), locale="ko-KR")
         page=ctx.new_page()
         page.set_default_timeout(45000)
+        netlog=[]
+        def on_resp(resp):
+            try:
+                u=resp.url
+                if resp.request.resource_type in ("xhr","fetch") or ".do" in u:
+                    netlog.append({"url":u,"status":resp.status,
+                        "type":resp.request.resource_type,"method":resp.request.method,
+                        "postData":(resp.request.post_data or "")[:300],
+                        "ct":resp.headers.get("content-type","")})
+            except Exception: pass
+        page.on("response", on_resp)
+        dialogs=[]
+        page.on("dialog", lambda d:(dialogs.append(d.message), d.accept()))
         page.goto(list_url, wait_until="domcontentloaded", timeout=60000)
-        page.wait_for_timeout(2500)
+        page.wait_for_timeout(3000)
 
         if mode=="recon":
+            # 연도 옵션이 로드될 때까지 대기
+            try:
+                page.wait_for_function(
+                  "()=>{const s=document.querySelector('[id*=fsyr],[name*=fsyr],[name=bsnsyear]');return s&&s.options&&s.options.length>0;}",
+                  timeout=10000)
+            except Exception: pass
+            year_opts=page.eval_on_selector_all("select",
+              "els=>els.map(e=>({id:e.id,name:e.name,opts:[...e.options].map(o=>o.value+':'+o.text).slice(0,8)}))")
             RB.mkdir(parents=True, exist_ok=True)
             page.screenshot(path=str(RB/"01-list.png"), full_page=True)
             (RB/"01-list.html").write_text(page.content(), encoding="utf-8")
@@ -150,6 +171,7 @@ def run(mode):
               "els=>els.slice(0,20).map(e=>({t:e.innerText.trim().slice(0,40),oc:(e.getAttribute('onclick')||'').slice(0,120),href:(e.getAttribute('href')||'').slice(0,80)}))")
             tables=read_tables(page)
             report={"url":list_url,"year":years[0],"tableCount":len(tables),
+                    "netlog":netlog,"yearOptions":year_opts,"dialogs":dialogs,
                     "resultLinks":links,
                     "tables":[{"caption":t["caption"],"headerGuess":t["rows"][0][:14],
                                "rowCount":len(t["rows"]),
