@@ -277,5 +277,84 @@ def run(mode):
         print(f"완료: 행 {len(all_rows)} / 사업 {len(ranked)}")
         br.close()
 
+def download(mode="download"):
+    """검색 후 포털의 '파일 저장'(엑셀/CSV) 다운로드를 캡처해 파싱 → data/*.json.
+       카드 렌더링에 의존하지 않아 가장 견고하다."""
+    from playwright.sync_api import sync_playwright
+    cfg={}
+    p=HERE/"config.json"
+    if p.exists(): cfg=json.loads(p.read_text(encoding="utf-8")).get("browser",{})
+    years=cfg.get("years",[2024,2023]); list_url=cfg.get("listUrl",LIST_URL)
+    DATA.mkdir(exist_ok=True); RB.mkdir(parents=True, exist_ok=True)
+    rows=[]
+    with sync_playwright() as pw:
+        br=pw.chromium.launch(args=["--no-sandbox"])
+        ctx=br.new_context(user_agent=os.environ.get("CRAWL_UA","SubsidyDisclosureResearch/1.0 (public data)"),
+                           locale="ko-KR", accept_downloads=True)
+        page=ctx.new_page(); page.set_default_timeout(45000)
+        for y in years:
+            try:
+                _goto(page, list_url); do_search(page, y)
+                # '파일 저장' 버튼 후보
+                clicked=None
+                for loc in ["#EA001201_btnFiledown","button:has-text('파일 저장'):visible",
+                            "button:has-text('저장'):visible","a:has-text('엑셀'):visible"]:
+                    el=page.locator(loc).first
+                    if el.count() and el.is_visible():
+                        try:
+                            with page.expect_download(timeout=30000) as di:
+                                el.click()
+                            dl=di.value
+                            fp=RB/f"download-{y}{os.path.splitext(dl.suggested_filename)[1] or '.xlsx'}"
+                            dl.save_as(str(fp)); clicked=str(fp)
+                            print(f"{y}: 다운로드 {dl.suggested_filename} → {fp}")
+                            rows.extend(parse_download(fp, y))
+                            break
+                        except Exception as e:
+                            print(f"{y}: {loc} 다운로드 실패 {e}")
+                if not clicked: print(f"{y}: 파일 저장 버튼을 찾지 못함")
+            except Exception as e:
+                print(f"{y}: {e}")
+        br.close()
+    if rows:
+        (DATA/"disclosures.json").write_text(json.dumps(
+            {"collectedAt":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),
+             "source":list_url,"rowCount":len(rows),"rows":rows},ensure_ascii=False),encoding="utf-8")
+        ranked=analyze(rows)
+        (DATA/"analysis.json").write_text(json.dumps(
+            {"analyzedAt":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),
+             "projectCount":len(ranked),"projects":ranked},ensure_ascii=False),encoding="utf-8")
+        print(f"완료: 행 {len(rows)} / 사업 {len(ranked)}")
+    else:
+        print("다운로드된 데이터 없음 — recon-browser/ 진단 확인")
+
+def parse_download(fp, year):
+    """엑셀/CSV 다운로드를 표준 행으로. openpyxl 없으면 CSV만."""
+    import csv as _csv
+    ext=os.path.splitext(fp)[1].lower()
+    tables=[]
+    if ext in (".xlsx",".xlsm"):
+        try:
+            import openpyxl
+            wb=openpyxl.load_workbook(fp, read_only=True, data_only=True)
+            for ws in wb.worksheets:
+                rowsv=[[("" if c is None else str(c)) for c in r] for r in ws.iter_rows(values_only=True)]
+                if len(rowsv)>=2: tables.append(rowsv)
+        except Exception as e:
+            print("  xlsx 파싱 실패:",e); return []
+    else:
+        with open(fp, encoding="utf-8-sig", errors="replace") as f:
+            tables.append([r for r in _csv.reader(f)])
+    out=[]
+    for tbl in tables:
+        picked=pick_data_table([{"rows":tbl}])
+        if not picked: continue
+        _,hi,m=picked
+        got=table_to_rows(tbl[hi], tbl[hi+1:], extra={"note":f"공시연도:{year}"})
+        out.extend(got)
+    return out
+
 if __name__=="__main__":
-    run(sys.argv[1] if len(sys.argv)>1 else "recon")
+    m=sys.argv[1] if len(sys.argv)>1 else "recon"
+    if m=="download": download()
+    else: run(m)
