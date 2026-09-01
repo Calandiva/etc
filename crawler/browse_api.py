@@ -159,6 +159,40 @@ def run(mode="api"):
                 print(f"  [{name}] items={len(its) if its else 0} err={err}")
             (RB/"param-probe.json").write_text(json.dumps({"testlab":testlab,"variants":pr},ensure_ascii=False,indent=1),encoding="utf-8")
 
+            # ★ 실제 f_search 흐름 재현: fn_registWebLog + 검색을 페이지가 직접 실행, 응답 캡처
+            realresp = {"got": []}
+            def _cap(resp):
+                if "retrieveInfoPblntfTrgetMngList.do" in resp.url:
+                    try: realresp["got"].append({"status": resp.status, "body": resp.text()[:4000]})
+                    except Exception as e: realresp["got"].append({"err": str(e)})
+            page.on("response", _cap)
+            sido0 = codes[0][0]
+            try:
+                page.evaluate("""(a)=>{
+                  const [y, lcgv] = a;
+                  const set=(id,v)=>{const el=document.getElementById(id); if(el){el.value=v;}};
+                  set('EA001201Frm_fsyr',String(y)); set('EA001201Frm_bsnsyear',String(y));
+                  set('EA001201Frm_basisCode','2'); set('EA001201Frm_wdrLcgvCode',lcgv);
+                  set('EA001201Frm_jrsdCode',''); set('EA001201Frm_dcsnBeginDe',''); set('EA001201Frm_dcsnEndDe','');
+                  set('EA001201FrmSrch_currentPageNum','1');
+                  if(typeof cf_opn_validChkDate==='undefined') window.cf_opn_validChkDate=function(){return true;};
+                  if(typeof f_toDateFormat2==='undefined') window.f_toDateFormat2=function(x){return x||'';};
+                  // 방법1: 페이지 f_search 직접 호출(내부에서 fn_registWebLog+검색)
+                  try{ if(typeof f_search==='function') f_search(); }catch(e){}
+                }""", [years[0], sido0])
+                page.wait_for_timeout(5000)
+                # 방법2: fn_registWebLog 먼저 호출 후 직접 검색
+                page.evaluate("()=>{ try{ if(typeof fn_registWebLog==='function') fn_registWebLog('USRM_10210','','2'); }catch(e){} }")
+                page.wait_for_timeout(1000)
+                r2 = post(page, SEARCH_EP, search_params(years[0],1,per,"2",sido0))
+                realresp["afterWebLog"] = {"err": (r2.get("json",{}) or {}).get("ERROR-0000") if isinstance(r2,dict) else None,
+                                          "items": len(find_list(r2.get("json")) or []) if isinstance(r2,dict) and r2.get("json") else 0}
+            except Exception as e:
+                realresp["error"] = str(e)
+            (RB/"real-search.json").write_text(json.dumps(realresp,ensure_ascii=False,indent=1)[:120000],encoding="utf-8")
+            print("f_search 응답:",len(realresp["got"]),"webLog후:",realresp.get("afterWebLog"))
+            for g in realresp["got"][:2]: print("   ",str(g)[:200])
+
         # 2) 시도→시군구별 지방보조사업 검색 (시군구 단위 → 조회상한 회피)
         def collect(y, sido_nm, lcgv, lab, label):
             page_no = 1; total = 0
