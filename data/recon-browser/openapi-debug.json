@@ -2,7 +2,9 @@
  {
   "ep": "https://apis.data.go.kr/1051000/MoefOpenAPI/T_OPD_PRMSCT_SBBGST",
   "page": 1,
-  "note": "JSON 아님",
-  "head": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><response>\n  <header>\n    <resultCode>10</resultCode>\n    <resultMsg>INVALID_REQUEST_PARAMETER_ERROR[resultType]</resultMsg>\n  </header>\n</response>"
+  "note": "항목 없음",
+  "keys": [
+   "OpenAPI_ServiceResponse"
+  ]
  }
 ]

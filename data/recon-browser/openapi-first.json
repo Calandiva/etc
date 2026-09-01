@@ -1,6 +1,9 @@
-<?xml version="1.0" encoding="UTF-8"?><response>
-  <header>
-    <resultCode>10</resultCode>
-    <resultMsg>INVALID_REQUEST_PARAMETER_ERROR[resultType]</resultMsg>
-  </header>
-</response>
+{
+  "OpenAPI_ServiceResponse": {
+    "cmmMsgHeader": {
+      "errMsg": "HTTP_ERROR",
+      "returnAuthMsg": "HTTP 에러",
+      "returnReasonCode": "04"
+    }
+  }
+}
