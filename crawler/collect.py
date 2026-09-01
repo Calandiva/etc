@@ -24,7 +24,7 @@ import urllib.parse
 
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parent
-sys.path.insert(0, str(ROOT / "api"))
+# _bojo는 crawler/ 안에 있음
 sys.path.insert(0, str(HERE))
 
 from _bojo import (extract_tables, fetch, make_session, parse_response,        # noqa: E402
@@ -41,6 +41,10 @@ RECON_TARGETS = [
     ("bojo-ea-guide",    "https://www.bojo.go.kr/ea/getEA001101View.do", "GET", None),
     ("bojo-ea-list",     "https://www.bojo.go.kr/ea/getEA001201View.do", "GET", None),
     ("bojo-ea-list-p1",  "https://www.bojo.go.kr/ea/getEA001201View.do", "POST", "pageIndex=1"),
+    ("bojo-ea-search24", "https://www.bojo.go.kr/ea/getEA001201View.do", "POST",
+     "currentPageNum=1&countPerPageNum=100&fiscalyear=2024&bsnsyear=2024&sortOrder=&searchFilterYn=N"),
+    ("bojo-ea-search23", "https://www.bojo.go.kr/ea/getEA001201View.do", "POST",
+     "currentPageNum=1&countPerPageNum=100&fiscalyear=2023&bsnsyear=2023&sortOrder=&searchFilterYn=N"),
     ("bojo-opn-biz",     "https://bojo.go.kr/opn/im/im002/getIM002001QView.do", "GET", None),
     ("bojo-opn-exec",    "https://bojo.go.kr/opn/ig/ig002/getIG002002QView.do", "GET", None),
     ("gosims-opn",       "https://opn.gosims.go.kr/opn/iz/iz000/getIZ000002QView.do", "GET", None),
