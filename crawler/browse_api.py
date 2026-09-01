@@ -135,6 +135,30 @@ def run(mode="api"):
             print("시군구 코드(", codes[0][1], "):", len(labs0), labs0[:5])
             dbg.append({"sido":codes[0][1],"labCount":len(labs0),"labSample":labs0[:5]})
 
+        # ★ 필수 파라미터 진단: 강릉시 등 유효코드 + 날짜범위/사업자구분 조합 시험
+        if codes:
+            labs, _ = lab_codes(codes[0][0])
+            testlab = labs[0][0] if labs else ""
+            variants = [
+              ("코드만", dict(dcsnBeginDe="",dcsnEndDe="",sys="")),
+              ("연도범위날짜", dict(dcsnBeginDe="20240101",dcsnEndDe="20241231",sys="")),
+              ("1개월날짜", dict(dcsnBeginDe="20250101",dcsnEndDe="20250131",sys="")),
+              ("sys002", dict(dcsnBeginDe="",dcsnEndDe="",sys="002")),
+              ("labSfrnd만", dict(lababs=True)),
+            ]
+            pr=[]
+            for name,v in variants:
+                p=search_params(years[0],1,per,"2",codes[0][0], testlab if not v.get("lababs") else testlab)
+                if not v.get("lababs"): p["labSfrndCode"]=testlab
+                p["dcsnBeginDe"]=v.get("dcsnBeginDe","");p["dcsnEndDe"]=v.get("dcsnEndDe","");p["ifpbntSysSeCode"]=v.get("sys","")
+                r=post(page,SEARCH_EP,p)
+                js=r.get("json") if isinstance(r,dict) else None
+                err=js.get("ERROR-0000") if isinstance(js,dict) else None
+                its=find_list(js) if js else None
+                pr.append({"variant":name,"err":err,"items":(len(its) if its else 0)})
+                print(f"  [{name}] items={len(its) if its else 0} err={err}")
+            (RB/"param-probe.json").write_text(json.dumps({"testlab":testlab,"variants":pr},ensure_ascii=False,indent=1),encoding="utf-8")
+
         # 2) 시도→시군구별 지방보조사업 검색 (시군구 단위 → 조회상한 회피)
         def collect(y, sido_nm, lcgv, lab, label):
             page_no = 1; total = 0
