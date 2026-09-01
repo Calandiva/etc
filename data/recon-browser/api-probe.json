@@ -1,0 +1,18 @@
+[
+ {
+  "combo": "지방2024",
+  "error": "HTTPSConnectionPool(host='www.bojo.go.kr', port=443): Max retries exceeded with url: /ea/retrieveInfoPblntfTrgetMngList.do (Caused by ConnectTimeoutError(<HTTPSConnection(host='www.bojo.go.kr', port=443) at 0x7f58349deb10>, 'Connection to www.bojo.go.kr timed out. (connect timeout=30)'))"
+ },
+ {
+  "combo": "지방2023",
+  "error": "HTTPSConnectionPool(host='www.bojo.go.kr', port=443): Max retries exceeded with url: /ea/retrieveInfoPblntfTrgetMngList.do (Caused by ConnectTimeoutError(<HTTPSConnection(host='www.bojo.go.kr', port=443) at 0x7f58349dedb0>, 'Connection to www.bojo.go.kr timed out. (connect timeout=30)'))"
+ },
+ {
+  "combo": "국고2024전체sys",
+  "error": "HTTPSConnectionPool(host='www.bojo.go.kr', port=443): Max retries exceeded with url: /ea/retrieveInfoPblntfTrgetMngList.do (Caused by ConnectTimeoutError(<HTTPSConnection(host='www.bojo.go.kr', port=443) at 0x7f58349df140>, 'Connection to www.bojo.go.kr timed out. (connect timeout=30)'))"
+ },
+ {
+  "combo": "국고2024",
+  "error": "HTTPSConnectionPool(host='www.bojo.go.kr', port=443): Max retries exceeded with url: /ea/retrieveInfoPblntfTrgetMngList.do (Caused by ConnectTimeoutError(<HTTPSConnection(host='www.bojo.go.kr', port=443) at 0x7f58349df4d0>, 'Connection to www.bojo.go.kr timed out. (connect timeout=30)'))"
+ }
+]
