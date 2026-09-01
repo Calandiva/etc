@@ -8,7 +8,7 @@ on:
         required: true
         default: "recon"
         type: choice
-        options: [recon, browser-recon, collect, browser-collect, download]
+        options: [api-probe, recon, browser-recon, collect, browser-collect, download]
   schedule:
     - cron: "0 21 * * 1"   # 매주 화요일 06:00 KST — 공시 갱신 반영
 
@@ -40,6 +40,7 @@ jobs:
             recon)          python crawler/collect.py recon ;;
             collect)        python crawler/collect.py collect ;;
             browser-recon)  python crawler/browse.py recon ;;
+            api-probe)      python crawler/api_probe.py ;;
             download)       python crawler/browse.py download ;;
             *)              python crawler/browse.py collect ;;
           esac
