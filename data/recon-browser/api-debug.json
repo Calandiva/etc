@@ -1,42 +1,14 @@
 [
  {
+  "plan": "국고/",
   "y": 2024,
-  "basis": "2",
   "page": 1,
-  "note": "list 없음",
-  "topkeys": [
-   "ERROR-0000",
-   "searchVo"
-  ]
+  "error": "Page.evaluate: TypeError: Failed to fetch\n    at eval (eval at evaluate (:290:30), <anonymous>:4:25)\n    at UtilityScript.evaluate (<anonymous>:297:18)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)"
  },
  {
-  "y": 2024,
-  "basis": "1",
-  "page": 1,
-  "note": "list 없음",
-  "topkeys": [
-   "ERROR-0000",
-   "searchVo"
-  ]
- },
- {
+  "plan": "국고/",
   "y": 2023,
-  "basis": "2",
   "page": 1,
-  "note": "list 없음",
-  "topkeys": [
-   "ERROR-0000",
-   "searchVo"
-  ]
- },
- {
-  "y": 2023,
-  "basis": "1",
-  "page": 1,
-  "note": "list 없음",
-  "topkeys": [
-   "ERROR-0000",
-   "searchVo"
-  ]
+  "error": "Page.evaluate: TypeError: Failed to fetch\n    at eval (eval at evaluate (:290:30), <anonymous>:4:25)\n    at UtilityScript.evaluate (<anonymous>:297:18)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)"
  }
 ]
