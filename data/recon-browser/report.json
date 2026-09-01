@@ -2,6 +2,7 @@
  "url": "https://www.bojo.go.kr/ea/getEA001201View.do",
  "year": 2024,
  "tableCount": 2,
+ "resultLinks": [],
  "tables": [
   {
    "caption": "보조사업자공시 목록 기본 조회 조건 - 회계연도, 사업연도, 공시근거, 중앙관서, 지방자치단체로 구성",
