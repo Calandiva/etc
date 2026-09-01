@@ -116,8 +116,13 @@
    "onsearch",
    "f_search",
    "f_searchRetrieveInfoPblntfTrgetMngList",
+   "f_callBackRetrieveInfoPblntfTrgetMngList",
    "f_searchComboDel",
-   "f_searchTextDel"
+   "f_searchTextDel",
+   "f_setWdrLcgvCodeList",
+   "f_callBackWdrLcgvCodeList",
+   "f_setLabSfrndCodeList",
+   "f_callBackSetLabSfrndCodeList"
   ]
  },
  "resultLinks": [],

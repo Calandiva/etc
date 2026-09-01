@@ -1,0 +1,182 @@
+f_search =====
+function f_search() {
+	searchShowList = undefined;
+	//모바일에서 스크롤 생성
+	if($(window).width() < 1025) {
+        $('body').removeClass('ovh');
+    }
+	
+	var special_pattern = /[`~!@#$%^&*|\\\'\";:\/<>?]/gi;
+	var excInsttNm = $("#EA001201Frm_excInsttNm").val();
+	var ddtlbzNm = $("#EA001201Frm_ddtlbzNm").val();
+	
+    if (special_pattern.test(excInsttNm) == true){
+        CMMFN.messagePopup('검색어는 특수문자를 포함할 수 없습니다.', true, null, 'W').then(function(){
+        	$('.conMore').removeClass("on");
+        	$('.search-table').addClass("on");
+        	$("#EA001201Frm_excInsttNm").val("");
+            $("#EA001201Frm_excInsttNm").focus();
+        });
+        return;
+    }
+    
+    if (special_pattern.test(ddtlbzNm) == true){
+        CMMFN.messagePopup('검색어는 특수문자를 포함할 수 없습니다.', true, null, 'W').then(function(){
+        	$('.conMore').removeClass("on");
+        	$('.search-table').addClass("on");
+        	$("#EA001201Frm_ddtlbzNm").val("");
+            $("#EA001201Frm_ddtlbzNm").focus();
+        });
+        return;
+    }	
+	
+	if($('#EA001201Frm_basisCode').val() == 1){	
+		//if(f_isEmpty($('#EA001201Frm_jrsdCode').val()))
+		if($('input[name=EA001201Frm_ifpbntSysSeCode]:checked').val() == '001' && f_isEmpty($('#EA001201Frm_jrsdCode').val())){
+			CMMFN.messagePopup('중앙관서를 선택해주세요.', true, null, "W").then(function () {
+				$('.search-table').addClass("on");
+				$('#EA001201Frm_jrsdCode').focus();
+				
+	        });
+			return false;
+		}
+	}
+	
+	var checkLfcy = new Array();
+    var checkFmlyType = new Array();
+    var checkBizExcType = new Array();
+    var checkEncomeType = new Array();
+    var checkCompanyType = new Array();
+    var checkEducType = new Array();
+    var checkSvcMain = new Array();
+	
+	//생애주기
+    $("input[name='checkLfcy']:checked").each(function() {
+        var chkVal = $(this).val();
+        checkLfcy.push(chkVal);
+    });
+    //가구구성유형
+    $("input[name='checkFmlyType']:checked").each(function() {
+        var chkVal = $(this).val();
+        checkFmlyType.push(chkVal);
+    });
+    //경제활동
+    $("input[name='checkBizExcType']:checked").each(function() {
+        var chkVal = $(this).val();
+        checkBizExcType.push(chkVal);
+    });
+    //소득기준
+    $("input[name='checkEncomeType']:checked").each(function() {
+        var chkVal = $(this).val();
+        checkEncomeType.push(chkVal);
+    });
+    //기업규모
+    $("input[name='checkCompanyType']:checked").each(function() {
+        var chkVal = $(this).val();
+        checkCompanyType.push(chkVal);
+    });
+    //교육단위
+    $("input[name='checkEducType']:checked").each(function() {
+        var chkVal = $(this).val();
+        checkEducType.push(chkVal);
+    });
+    //서비스주체
+    $("input[name='checkSvcMain']:checked").each(function() {
+        var chkVal = $(this).val();
+        checkSvcMain.push(chkVal);
+    });
+	
+	mainGridData = [];
+	//검색 클릭 or 조건 필드 Enter인 경우 현재페이지 1로 초기화
+	$('#EA001201FrmSrch_currentPageNum').val(ea001201_currentPageNum);
+	$(".notiBox").hide();
+	$(".titleSort").show();
+	$("#tableWrapType").show();
+	$("#chkReSrch").show(); //조회시 결과내검색 show
+	f_selectedTextTextEA001201Frm_dcsnBeginDe();
+	f_selectedTextTextEA001201Frm_dcsnEndDe();
+	f_selectedTextInput();
+	f_searchRetrieveInfoPblntfTrgetMngList();
+	//f_searchRetrieveInfoPblntfTrgetMngList(parseInt($("#EA001201FrmSrch_currentPageNum").val()), parseInt($("#EA001201FrmSrch_nPageSize").val()));
+	
+	//2024.03.20. 이력저장
+	fn_registWebLog('USRM_10210', '', $("#EA001201Frm_basisCode").val());
+	
+}
+
+===== f_searchRetrieveInfoPblntfTrgetMngList =====
+function f_searchRetrieveInfoPblntfTrgetMngList() {
+	if ( !cf_opn_validChkDate($('#EA001201Frm_dcsnBeginDe').val(), $('#EA001201Frm_dcsnEndDe').val()) ) {
+		CMMFN.messagePopup("공시일자 을(를) 확인 하십시오!", true, null, "W").then(function (){});
+		return;
+	}
+	
+	//검색조건 셋팅
+	$('#EA001201FrmSrch_fsyr').val($('#EA001201Frm_fsyr').val());	//회계연도
+	$('#EA001201FrmSrch_bsnsyear').val($('#EA001201Frm_bsnsyear').val());	//사업연도
+	$('#EA001201FrmSrch_jrsdCode').val($('#EA001201Frm_jrsdCode').val());	//중앙관서코드	
+	
+	$('#EA001201FrmSrch_dcsnBeginDe').val(f_toDateFormat2($('#EA001201Frm_dcsnBeginDe').val()));	//공시일자 시작일자
+	$('#EA001201FrmSrch_dcsnEndDe').val(f_toDateFormat2($('#EA001201Frm_dcsnEndDe').val()));		//공시일자 종료일자
+//	
+	/////////////// 페이징 처리 ///////////////////////////////////////
+    //$('#EA001201FrmSrch_currentPageNum').attr('value', currentPageNum);
+    $('#EA001201FrmSrch_nPageSize').attr('value', ea001201_countPerPageNum);    
+    /////////////// 페이징 처리 ///////////////////////////////////////
+	
+	//지방보조금 관련 key
+	$('#EA001201FrmSrch_basisCode').val($('#EA001201Frm_basisCode').val());	//공시근거
+	$('#EA001201FrmSrch_wdrLcgvCode').val($('#EA001201Frm_wdrLcgvCode').val());	//자치단체
+	$('#EA001201FrmSrch_labSfrndCode').val($('#EA001201Frm_labSfrndCode').val());	//자치단체
+    
+	//정렬값
+    $('#EA001201FrmSrch_sortOrder').val($('#sbxGirdOrdby').val());
+    
+    //2026.06.08. 검색 필터링 조건 추가 
+    var tViewText = "";
+    var tSelVal = "";
+    $(".searchFilter:checked").each(function(idx, item){
+    	if($(this).val() != ""){
+    		if(tViewText == "")	tViewText += $.trim($(this).parent().parent().text());
+    		else tViewText += "^"+$.trim($(this).parent().parent().text());
+    		if(tSelVal == "") tSelVal = $(this).val();
+    		else tSelVal += ","+$(this).val();
+    	}
+    });
+    
+    $("#selectedMultiText").val(tViewText);
+    $("#selectedMultiType").val(tSelVal);
+    
+  //2026.06.08. 국고,국고+지방 검색 필터링 추가
+    var tSysSeCode = "";
+    $(".searchFilterSysSeCode:checked").each(function(idx, item){
+    	if($(this).val() != ""){
+    		if(tSysSeCode == "") tSysSeCode = $(this).val();
+    		else tSysSeCode += ","+$(this).val();
+    	}
+    });
+    
+    $("#selectedMultiSysSeCode").val(tSysSeCode);
+	
+    var path = "/ea/retrieveInfoPblntfTrgetMngList.do";	
+    
+	var params = $("#EA001201FrmSrch").serialize();
+    
+	CMMFN.useAjaxLoadingMask = true;
+    // ajax 호츌
+    $.ajax({
+//    	beforeSend: cf_setCSRFHeader,
+		url: path,
+		type: 'POST',
+		data: params,
+        contentType: 'application/x-www-form-urlencoded; charset=UTF-8', 
+        dataType: 'json',
+		success: function(res, stat) {
+			if( res["ERROR-0000"] != undefined ) {
+				CMMFN.messagePopup(res["ERROR-0000"], true, null, 'E');
+			}
+			// 로딩바 숨기기
+			cf_callback(res, stat, f_callBackRetrieveInfoPblntfTrgetMngList);			
+		}
+	});
+}
