@@ -70,7 +70,7 @@ def to_rows(items):
         if rec.get("project") or rec.get("recipient"): out.append(rec)
     return out, m, keys
 def run():
-    key=os.environ.get("DATA_GO_KR_KEY","").strip()
+    key=(sys.argv[1] if len(sys.argv)>1 else os.environ.get("DATA_GO_KR_KEY","")).strip()
     RB.mkdir(parents=True,exist_ok=True); DATA.mkdir(exist_ok=True)
     if not key:
         print("DATA_GO_KR_KEY 미설정 — https://www.data.go.kr/data/15097584/openapi.do 에서 발급 후\n"

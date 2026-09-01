@@ -43,6 +43,16 @@ CSV는 라이브러리 없이 처리하고, XLSX는 SheetJS(cdnjs)로 읽습니�
 3. **Actions → 정보공시 수집·분석 → Run workflow → mode: `openapi`**
 4. 수집 결과가 `data/analysis.json`으로 커밋되고, 앱이 자동으로 % 목록을 그립니다(최초 1회면 충분)
 
+> **주의 — 신규 발급 키 활성화 지연:** data.go.kr에서 막 발급한 서비스키는 실시간 API
+> (apis.data.go.kr)에 반영되는 데 통상 **최대 1~2시간**이 걸립니다. 그 전에는 게이트웨이가
+> 타임아웃/오류를 반환합니다. 키를 발급하고 조금 뒤에 실행하세요.
+
+**로컬 실행(권장, 즉시):** 인터넷 되는 본인 PC에서
+```bash
+python crawler/collect_openapi.py "<서비스키>"     # 또는 DATA_GO_KR_KEY 환경변수
+# → data/analysis.json 생성 후 index.html 열기
+```
+
 ```
 crawler/collect_openapi.py — data.go.kr OpenAPI 페이지네이션 수집 → 요건 모델 분석
 .github/workflows/collect.yml — mode: openapi (DATA_GO_KR_KEY 시크릿 사용)
