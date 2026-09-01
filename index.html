@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>보조사업 부정수급 가능성 목록</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="model.js"></script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@700;900&family=Noto+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <style>
 :root{
@@ -124,6 +126,86 @@ const won=v=>{v=+v||0;const a=Math.abs(v);
   return a>=1e8?(v/1e8).toFixed(1).replace(/\.0$/,"")+"억원":a>=1e4?Math.round(v/1e4).toLocaleString()+"만원":v.toLocaleString()+"원";};
 let DATA=null;
 
+/* 공시 원본 파일(xlsx/csv/json) → 표준 집행행 → 요건 모델 분석 */
+const A_ALIAS={
+ project:["보조사업명","사업명","세부사업명","내역사업명","사업","과제명"],
+ grantor:["교부기관","소관기관","중앙관서","교부처","소관부처","지자체"],
+ recipient:["보조사업자","보조사업자명","수행기관","단체명","업체명","기관명","수급자"],
+ bizno:["사업자등록번호","사업자번호","고유번호"],ceo:["대표자","대표자명","대표"],
+ item:["비목","비목명","계정과목","지출항목","세목"],
+ vendor:["거래처","거래처명","지급처","수취인","계약상대자","공급자","업체"],
+ vendorBizno:["거래처사업자번호","공급자사업자번호","계약상대자사업자번호"],
+ method:["계약방법","계약방식","구매방법","계약구분"],
+ amount:["집행액","지출액","금액","계약금액","지급액","집행금액","결제금액","지출금액"],
+ grant:["교부액","교부금액","보조금액","지원금액","예산액","총사업비"],
+ date:["집행일자","지출일자","거래일자","계약일자","지급일","일자","결제일"],
+ doc:["증빙","증빙유형","증빙서류"],note:["비고","적요","내용","산출내역","성명"]};
+const anorm=x=>String(x==null?"":x).replace(/[\s"'()\[\]·:]/g,"").toLowerCase();
+function amap(h){const m={};for(const k in A_ALIAS){const ns=A_ALIAS[k];
+  let i=h.findIndex(x=>ns.some(n=>anorm(x)===anorm(n)));
+  if(i<0)i=h.findIndex(x=>ns.some(n=>anorm(x).includes(anorm(n))));
+  if(i>=0)m[k]=i;}return m;}
+const anum=v=>{const n=parseFloat(String(v==null?"":v).replace(/[^0-9.\-]/g,""));return isFinite(n)?n:0;};
+function tableToRows(table){
+  let hi=0,best=-1;for(let i=0;i<Math.min(4,table.length);i++){const c=Object.keys(amap(table[i])).length;if(c>best){best=c;hi=i;}}
+  if(best<2)return[];
+  const m=amap(table[hi]);
+  return table.slice(hi+1).map(r=>{const g=k=>m[k]!=null&&m[k]<r.length?String(r[m[k]]==null?"":r[m[k]]).trim():"";
+    const rec={};for(const k in A_ALIAS)rec[k]=(k==="amount"||k==="grant")?anum(g(k)):g(k);return rec;})
+    .filter(r=>r.project||r.recipient||r.amount);
+}
+function ingestFile(f){
+  const ext=(f.name.split(".").pop()||"").toLowerCase();
+  const rd=new FileReader();
+  rd.onload=()=>{
+    try{
+      if(ext==="json"){const j=JSON.parse(rd.result);
+        if(j.projects){boot(j);return;}
+        const rows=(j.rows||j.data||j).map(r=>({...r,amount:anum(r.amount),grant:anum(r.grant)}));
+        return rankRows(rows,f.name);
+      }
+      let rows=[];
+      if(ext==="csv"){
+        rows=tableToRows(parseCSV(rd.result));
+      }else{ // xlsx/xls
+        if(typeof XLSX==="undefined")throw new Error("엑셀 파서를 불러오지 못했습니다(네트워크 차단). CSV로 저장해 올려 주세요.");
+        const wb=XLSX.read(new Uint8Array(rd.result),{type:"array"});
+        rows=sheetsToRows(wb);
+      }
+      if(!rows.length)throw new Error("집행내역 표를 인식하지 못했습니다. 헤더에 보조사업명·거래처·집행액 등이 있어야 합니다.");
+      rankRows(rows,f.name);
+    }catch(err){alert("분석 실패: "+err.message);}
+  };
+  if(ext==="csv"||ext==="json")rd.readAsBinaryString?rd.readAsText(f,"utf-8"):rd.readAsText(f);
+  else rd.readAsArrayBuffer(f);
+}
+function parseCSV(text){
+  text=String(text).replace(/^\ufeff/,"");
+  const delim=(text.split("\n")[0].match(/\t/g)||[]).length>(text.split("\n")[0].match(/,/g)||[]).length?"\t":",";
+  const rows=[];let row=[],cell="",q=false;
+  for(let i=0;i<text.length;i++){const c=text[i];
+    if(q){if(c==='"'){if(text[i+1]==='"'){cell+='"';i++;}else q=false;}else cell+=c;}
+    else if(c==='"')q=true;
+    else if(c===delim){row.push(cell);cell="";}
+    else if(c==="\n"){row.push(cell);rows.push(row);row=[];cell="";}
+    else if(c!=="\r")cell+=c;}
+  if(cell||row.length){row.push(cell);rows.push(row);}
+  return rows.filter(r=>r.some(c=>String(c).trim()!==""));
+}
+function sheetsToRows(wb){
+  let rows=[];
+  wb.SheetNames.forEach(nm=>{
+    const arr=XLSX.utils.sheet_to_json(wb.Sheets[nm],{header:1,defval:""});
+    rows=rows.concat(tableToRows(arr.map(r=>r.map(c=>String(c)))));
+  });
+  return rows;
+}
+function rankRows(rows,name){
+  const ranked=FRAUD_MODEL.analyze(rows);
+  boot({analyzedAt:new Date().toISOString(),projectCount:ranked.length,projects:ranked,_source:name});
+}
+
+
 async function load(){
   try{
     const r=await fetch("data/analysis.json",{cache:"no-store"});
@@ -135,15 +217,13 @@ async function load(){
       <p><b>data/analysis.json</b>이 아직 없습니다.</p>
       <p>GitHub Actions의 <b>정보공시 수집·분석</b> 워크플로를 실행하면 공시 웹페이지를 크롤링해
       이 파일이 커밋되고, 페이지를 새로고침하면 목록이 나타납니다.</p>
-      <p style="margin-top:14px"><button class="btn" id="pick">또는 analysis.json 직접 열기</button>
-      <input type="file" id="file" accept=".json" hidden></p></div>`;
+      <p style="margin-top:6px;color:var(--muted)">또는 <b>보조금통합포털에서 내려받은 공시 엑셀/CSV</b>를 여기서 바로 분석하세요 —
+      집행내역이 사업별 부정 가능성 %로 순위화됩니다(브라우저 안에서만 처리).</p>
+      <p style="margin-top:14px"><button class="btn" id="pick">공시 파일 열기 (.xlsx·.csv·.json)</button>
+      <input type="file" id="file" accept=".xlsx,.xls,.csv,.json" hidden></p>
+      <p style="font-size:12px;color:var(--muted);margin-top:10px">보조사업자 정보공시 → 연도 조회 → <b>파일 저장</b>으로 받은 엑셀을 올리면 됩니다.</p></div>`;
     $("#pick").addEventListener("click",()=>$("#file").click());
-    $("#file").addEventListener("change",ev=>{
-      const f=ev.target.files[0]; if(!f)return;
-      const rd=new FileReader();
-      rd.onload=()=>{try{boot(JSON.parse(rd.result))}catch(err){alert("JSON을 읽지 못했습니다: "+err.message)}};
-      rd.readAsText(f,"utf-8");
-    });
+    $("#file").addEventListener("change",ev=>{ if(ev.target.files[0]) ingestFile(ev.target.files[0]); });
   }
 }
 function boot(d){
