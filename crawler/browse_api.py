@@ -164,6 +164,39 @@ def run(mode="api"):
         (RB/"code-elements.json").write_text(json.dumps(rel,ensure_ascii=False,indent=1),encoding="utf-8")
         print("select",len(selects),"개, 코드요소",len(rel),"개 덤프")
 
+        # ★★ 페이지의 실제 데이터 함수를 직접 호출 → 정답 serialize 문자열 + 응답 캡처
+        truth={"serialize":[], "resps":[]}
+        def cap_req(req):
+            if "retrieveInfoPblntfTrgetMngList" in req.url and req.post_data:
+                truth["serialize"].append(req.post_data)
+        def cap_resp(resp):
+            if "retrieveInfoPblntfTrgetMngList" in resp.url:
+                try: truth["resps"].append({"status":resp.status,"body":resp.text()[:8000]})
+                except Exception as e: truth["resps"].append({"err":str(e)})
+        page.on("request", cap_req); page.on("response", cap_resp)
+        try:
+            ser=page.evaluate("""(a)=>{
+              const [y, basis] = a;
+              const setv=(sel,v)=>{const el=document.querySelector(sel); if(el){el.value=v;}};
+              setv('#EA001201Frm_fsyr', String(y)); setv('#EA001201Frm_bsnsyear', String(y));
+              setv('#EA001201Frm_basisCode', basis);
+              setv('#EA001201Frm_dcsnBeginDe',''); setv('#EA001201Frm_dcsnEndDe','');
+              setv('#EA001201FrmSrch_currentPageNum','1');
+              try{ window.ea001201_countPerPageNum = 100; }catch(e){}
+              // 페이지 함수가 있으면 필드복사+POST 실행
+              if(typeof f_searchRetrieveInfoPblntfTrgetMngList==='function'){
+                 f_searchRetrieveInfoPblntfTrgetMngList();
+              }
+              // 동시에 serialize 문자열도 반환(필드 복사 후 상태)
+              try{ return (window.$ ? $('#EA001201FrmSrch').serialize() : ''); }catch(e){ return 'serr:'+e; }
+            }""", [years[0], "2"])
+            truth["serializeReturn"]=ser
+            page.wait_for_timeout(5000)
+        except Exception as e:
+            truth["error"]=str(e)
+        (RB/"truth.json").write_text(json.dumps(truth,ensure_ascii=False,indent=1)[:200000],encoding="utf-8")
+        print("정답 요청",len(truth["serialize"]),"응답",len(truth["resps"]),"serialize:",str(truth.get("serializeReturn"))[:120])
+
         def collect_window(year, basis, beg, end):
             """[beg,end] 창을 수집. 범위 초과면 반으로 분할 재귀."""
             if qcount[0]>=max_queries: return
