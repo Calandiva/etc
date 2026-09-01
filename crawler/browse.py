@@ -90,37 +90,44 @@ def pick_data_table(tables):
     return best  # (table, header_idx, map) or None
 
 def do_search(page, year):
-    """회계연도·사업연도(숨은 필드/보이는 select)를 year로 맞추고 조회, 결과 렌더 대기."""
+    """회계연도 select 옵션이 JS로 주입될 때까지 대기 후 연도 선택, f_search() 호출, 결과 대기."""
+    # 1) 보이는 회계연도 select에 옵션이 채워질 때까지 대기(JS 주입)
+    try:
+        page.wait_for_function(
+            "()=>{const s=document.querySelector('#EA001201Frm_fsyr,select[id$=_fsyr]');"
+            "return s && s.options && s.options.length>0;}", timeout=20000)
+    except Exception:
+        page.wait_for_timeout(3000)
+    # 2) 회계연도·사업연도 select와 숨은 필드 모두 year로 설정 + change
     page.evaluate("""(y)=>{
-      document.querySelectorAll('input[name=fiscalyear],input[name=bsnsyear],input[id*=fsyr],input[id*=bsnsyear]')
-        .forEach(el=>{el.value=String(y);});
+      const want=String(y);
       document.querySelectorAll('select').forEach(el=>{
-        if(/fsyr|bsnsyear|회계연도|사업연도/i.test((el.id||'')+' '+(el.name||''))){
-          for(const o of el.options) if(o.value==String(y)||o.text.includes(String(y))){el.value=o.value;}
+        const key=(el.id||'')+' '+(el.name||'');
+        if(/fsyr|bsnsyear|회계연도|사업연도/i.test(key)){
+          let done=false;
+          for(const o of el.options){ if(o.value==want||o.text.includes(want)){ el.value=o.value; done=true; } }
+          if(!done && el.options.length) el.selectedIndex=el.options.length-1; // 최신연도 대체
           el.dispatchEvent(new Event('change',{bubbles:true}));
         }});
+      document.querySelectorAll('input[name=fiscalyear],input[name=bsnsyear],input[id$=_fsyr],input[id$=_bsnsyear]')
+        .forEach(el=>{ el.value=want; el.dispatchEvent(new Event('change',{bubbles:true})); });
     }""", year)
-    # 보이는 조회 버튼 클릭 → 실패 시 전역 f_search()
-    ok=False
-    for loc in ["button.searchButton:visible", "a.searchButton:visible",
-                "button:has-text('조회'):visible", "input[value='조회']:visible"]:
-        try:
-            el=page.locator(loc).first
-            if el.count() and el.is_visible():
-                el.click(timeout=4000); ok=True; break
+    page.wait_for_timeout(500)
+    # 3) f_search() 직접 호출(가장 신뢰) → 실패 시 버튼 클릭
+    fired=False
+    try:
+        if page.evaluate("()=>typeof f_search==='function'"):
+            page.evaluate("()=>f_search()"); fired=True
+    except Exception: pass
+    if not fired:
+        try: page.locator("button.searchButton:visible").first.click(timeout=4000)
         except Exception: pass
-    if not ok:
-        for fn in ["f_search", "fn_search", "goSearch"]:
-            try:
-                if page.evaluate(f"()=>typeof {fn}==='function'"):
-                    page.evaluate(f"()=>{fn}()"); ok=True; break
-            except Exception: pass
-    # 결과 컨테이너가 채워질 때까지 대기(카드형 #tableWrap 또는 표형 전환)
+    # 4) 결과 컨테이너가 채워질 때까지 대기
     try:
         page.wait_for_function(
           "()=>{const w=document.querySelector('#tableWrap');"
-          "const rows=document.querySelectorAll('#tableWrap li,#tableWrap tr,#tableWrap .card,#tableWrap [class*=item]');"
-          "return (w&&w.innerText.trim().length>30)||rows.length>0;}", timeout=20000)
+          "const rows=document.querySelectorAll('#tableWrap li,#tableWrap tr,#tableWrap .card,#tableWrap [class*=item],#tableWrap [class*=List]');"
+          "return (w&&w.innerText.trim().length>30)||rows.length>0;}", timeout=25000)
     except Exception:
         page.wait_for_timeout(3000)
 
