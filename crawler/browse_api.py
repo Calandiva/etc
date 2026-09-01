@@ -108,6 +108,32 @@ def run(mode="api"):
         for a in range(5):
             try: page.goto(LIST_PAGE,wait_until="domcontentloaded",timeout=60000); page.wait_for_timeout(4000); break
             except Exception as e: print("goto 재시도",a+1,e); page.wait_for_timeout(3000)
+
+        # ★ B안 우선: 페이지 오염 전에 EA001201.js 원본에서 다운로드 함수·엔드포인트 추출
+        try:
+            jsinfo=page.evaluate("""async ()=>{
+              const out={};
+              let ea = [...document.scripts].map(s=>s.src).find(u=>/EA001201/i.test(u));
+              if(!ea) ea = location.origin + '/js/iptl/ea/EA001201.js';
+              out.jsUrl=ea;
+              const t = await (await fetch(ea)).text();
+              out.jsLen=t.length;
+              const grab=(nm)=>{ const i=t.indexOf('function '+nm); if(i<0) return null;
+                let d=0,j=t.indexOf('{',i); if(j<0) return null;
+                for(let k=j;k<t.length;k++){ if(t[k]==='{')d++; else if(t[k]==='}'){d--; if(d===0) return t.slice(i,k+1);} } return null; };
+              const names=[...t.matchAll(/function\s+(f_[A-Za-z0-9_]*(?:[Ee]xcel|[Dd]own|[Ff]ile|[Ss]ave|[Xx]ls|[Pp]rint)[A-Za-z0-9_]*)\s*\(/g)].map(m=>m[1]);
+              out.funcNames=[...new Set(names)];
+              out.funcs=out.funcNames.map(nm=>({nm, src:(grab(nm)||'').slice(0,2500)}));
+              out.doPaths=[...new Set([...t.matchAll(/["'](\/[A-Za-z0-9_\/]+\.do)["']/g)].map(m=>m[1]))];
+              // 엑셀/다운로드 키워드 주변 라인
+              out.hints=[...t.matchAll(/.{0,80}(?:엑셀|파일저장|excelDown|fileDown|makeExcel|downExcel|xls).{0,120}/gi)].map(m=>m[0]).slice(0,15);
+              return out;
+            }""")
+            (RB/"js-download.json").write_text(json.dumps(jsinfo,ensure_ascii=False,indent=1)[:400000],encoding="utf-8")
+            print("JS 추출:",jsinfo.get("jsLen"),"함수",jsinfo.get("funcNames"))
+        except Exception as e:
+            (RB/"js-download.json").write_text(json.dumps({"error":str(e)},ensure_ascii=False),encoding="utf-8")
+            print("JS 추출 실패:",e)
         # 국고 라디오/구분 선택을 시도해 관서 콤보 로드 유발
         try:
             page.evaluate("""()=>{
