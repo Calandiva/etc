@@ -15,6 +15,8 @@ BASE = "https://www.bojo.go.kr"
 LIST_PAGE = BASE + "/ea/getEA001201View.do"
 SEARCH_EP = "/ea/retrieveInfoPblntfTrgetMngList.do"
 LCGV_EP   = "/ea/getWdrLcgvCodeList.do"
+LAB_EP    = "/ea/getLabSfrndCodeList.do"
+EXCEL_EP  = "/ea/retrieveInfoPblntfTrgetMngListExcelDownload.do"
 
 def cfgget():
     p = HERE/"config.json"
@@ -114,6 +116,30 @@ def run(mode="api"):
         print("자치단체 코드:", len(codes), codes[:5])
         dbg.append({"lcgvCount": len(codes), "sample": codes[:5]})
         if max_codes: codes = codes[:max_codes]
+
+        # ★ 엑셀 다운로드 시험(서버 스트리밍 → 조회상한 우회 가능성). 바이트를 base64로 회수.
+        if codes:
+            c0 = codes[0][0]
+            xls = page.evaluate("""async (a)=>{
+              const [ep, body] = a;
+              try{
+                const r = await fetch(ep, {method:'POST', credentials:'include',
+                  headers:{'Content-Type':'application/x-www-form-urlencoded; charset=UTF-8'}, body});
+                const ct = r.headers.get('content-type')||'';
+                const buf = await r.arrayBuffer();
+                let bin=''; const bytes=new Uint8Array(buf);
+                for(let i=0;i<bytes.length && i<8000000;i++) bin+=String.fromCharCode(bytes[i]);
+                return {status:r.status, ct, len:bytes.length, b64: btoa(bin), head: Array.from(bytes.slice(0,4))};
+              }catch(e){ return {err:String(e)}; }
+            }""", [EXCEL_EP, "&".join(f"{k}={v}" for k,v in search_params(years[0],1,10000,"2",c0).items())])
+            info = {k:v for k,v in xls.items() if k!="b64"}
+            (RB/"excel-test.json").write_text(json.dumps(info, ensure_ascii=False, indent=1), encoding="utf-8")
+            print("엑셀 시험:", info)
+            if xls.get("b64") and xls.get("len",0) > 200:
+                import base64
+                ext = "xlsx" if xls.get("head",[0])[0]==80 else "bin"  # PK=0x50
+                (RB/f"excel-sample.{ext}").write_bytes(base64.b64decode(xls["b64"]))
+                print(f"엑셀 파일 저장: excel-sample.{ext} ({xls['len']} bytes)")
 
         # 2) 코드별 지방보조사업 검색 (유효 코드 → 조회상한 회피)
         for code, nm in codes:
