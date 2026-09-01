@@ -1,374 +1,162 @@
-"""브라우저 세션 안에서 공시 JSON 엔드포인트 직접 호출 + 공시일 구간 분할 수집.
-   POST /ea/retrieveInfoPblntfTrgetMngList.do (CSRF 없음, JSON).
-   '조회 범위 초과'는 공시일(dcsnBeginDe~dcsnEndDe) 구간을 반으로 쪼개 회피한다."""
-import json, os, re, sys, time, pathlib, datetime
-HERE=pathlib.Path(__file__).resolve().parent; ROOT=HERE.parent
+"""bojo.go.kr 공시 수집 (브라우저 세션 안에서 실제 엔드포인트 직접 호출).
+
+f_search/EA001201.js 소스 분석으로 확정한 사실:
+  · 검색 JSON  : POST /ea/retrieveInfoPblntfTrgetMngList.do  (유효 자치단체/관서 코드 없으면 '조회 범위 초과')
+  · 자치단체코드: POST /ea/getWdrLcgvCodeList.do  (basisCode=2)
+  · 엑셀 다운로드: POST /ea/retrieveInfoPblntfTrgetMngListExcelDownload.do
+requests는 서버가 차단하므로 브라우저의 신뢰 세션 fetch로 호출한다.
+"""
+import json, os, re, sys, time, pathlib
+HERE = pathlib.Path(__file__).resolve().parent; ROOT = HERE.parent
 sys.path.insert(0, str(HERE))
 from model import analyze
-DATA=ROOT/"data"; RB=DATA/"recon-browser"
-BASE="https://www.bojo.go.kr"; LIST_PAGE=BASE+"/ea/getEA001201View.do"
-DATA_EP="/ea/retrieveInfoPblntfTrgetMngList.do"
-# 행정표준 시도 코드 (지방보조사업 wdrLcgvCode 후보)
-SIDO=[("11","서울"),("26","부산"),("27","대구"),("28","인천"),("29","광주"),("30","대전"),
-      ("31","울산"),("36","세종"),("41","경기"),("43","충북"),("44","충남"),("46","전남"),
-      ("47","경북"),("48","경남"),("50","제주"),("51","강원"),("52","전북")]
-FETCH_JS = (
- "async (a)=>{const[ep,data]=a;"
- "const body=Object.entries(data).map(([k,v])=>encodeURIComponent(k)+'='+encodeURIComponent(v)).join('&');"
- "try{const r=await fetch(ep,{method:'POST',credentials:'include',"
- "headers:{'Content-Type':'application/x-www-form-urlencoded; charset=UTF-8','X-Requested-With':'XMLHttpRequest'},body});"
- "const t=await r.text();try{return{ok:true,status:r.status,json:JSON.parse(t)};}"
- "catch(e){return{ok:false,status:r.status,text:t.slice(0,300)};}}"
- "catch(e){return{ok:false,fetchError:String(e)};}}")
+DATA = ROOT/"data"; RB = DATA/"recon-browser"
+BASE = "https://www.bojo.go.kr"
+LIST_PAGE = BASE + "/ea/getEA001201View.do"
+SEARCH_EP = "/ea/retrieveInfoPblntfTrgetMngList.do"
+LCGV_EP   = "/ea/getWdrLcgvCodeList.do"
 
-def params(year, page, per, basis, beg, end):
-    return {"currentPageNum":str(page),"countPerPageNum":str(per),
-        "fiscalyear":str(year),"bsnsyear":str(year),"jrsdCode":"",
-        "excInsttNm":"","ddtlbzNm":"","dcsnBeginDe":beg,"dcsnEndDe":end,
-        "ifpbntSysSeCode":"","sortOrder":"","searchFilterYn":"N",
-        "basisCode":basis,"wdrLcgvCode":"","labSfrndCode":"",
-        "selectedMultiText":"","selectedMultiType":"","selectedMultiSysSeCode":""}
+def cfgget():
+    p = HERE/"config.json"
+    return (json.loads(p.read_text(encoding="utf-8")).get("browser", {}) if p.exists() else {})
 
-def call(page, p, tries=3):
-    last=None
-    for _ in range(tries):
-        r=page.evaluate(FETCH_JS,[DATA_EP,p])
-        if isinstance(r,dict) and r.get("ok"): return r
-        last=r; page.wait_for_timeout(1000)
-    return last or {"ok":False}
-
-def find_list(o,d=0):
-    if d>5: return None
-    if isinstance(o,list) and o and isinstance(o[0],dict): return o
-    if isinstance(o,dict):
+def find_list(o, d=0):
+    if d > 6: return None
+    if isinstance(o, list) and o and isinstance(o[0], dict): return o
+    if isinstance(o, dict):
         for v in o.values():
-            r=find_list(v,d+1)
+            r = find_list(v, d+1)
             if r: return r
     return None
 
-ALIAS={"project":["ddtlbznm","bsnsnm","사업명","보조사업명","sbsdbsnsnm","dtlbznm"],
- "recipient":["excinsttnm","수행기관","보조사업자","기관명","insttnm","excinstt"],
- "grantor":["jrsdnm","소관","중앙관서","교부기관","jrsdcodenm","wdrlcgvnm"],
- "grant":["교부액","보조금액","sbsdamt","totlamt","aftrkeepamt","txamt","bsnsamt","sumamt"],
+ALIAS = {"project":["ddtlbznm","bsnsnm","사업명","보조사업명","sbsdbsnsnm","dtlbznm","bojosaeopmyeong"],
+ "recipient":["excinsttnm","수행기관","보조사업자","기관명","insttnm"],
+ "grantor":["jrsdnm","소관","중앙관서","교부기관","wdrlcgvnm","자치단체"],
+ "grant":["교부액","보조금액","sbsdamt","totlamt","aftrkeepamt","txamt","bsnsamt","sumamt","gyobuaek"],
  "bizno":["bizrno","brno","사업자"], "date":["dcsnde","공시일"],
  "note":["hwipnbassid","dtlbzid","bsnsid","infopblntftrgetmngid"]}
-def nk(s): return re.sub(r"[^0-9a-z가-힣]","",str(s or "").lower())
+def nk(s): return re.sub(r"[^0-9a-z가-힣]", "", str(s or "").lower())
 def to_num(v):
-    m=re.sub(r"[^0-9.\-]","",str(v or ""))
-    try: return float(m) if m not in("","-",".") else 0.0
-    except: return 0.0
+    m = re.sub(r"[^0-9.\-]", "", str(v or ""))
+    try: return float(m) if m not in ("", "-", ".") else 0.0
+    except ValueError: return 0.0
 def map_items(items):
-    keys=list(items[0].keys()); m={}
-    for f,al in ALIAS.items():
-        k=next((k for k in keys if nk(k) in {nk(a) for a in al}),None)
-        if not k: k=next((k for k in keys if any(nk(a) in nk(k) for a in al)),None)
-        if k: m[f]=k
-    return m,keys
-def to_rows(items,year,basis,m):
-    out=[]
+    keys = list(items[0].keys()); m = {}
+    for f, al in ALIAS.items():
+        k = next((k for k in keys if nk(k) in {nk(a) for a in al}), None)
+        if not k: k = next((k for k in keys if any(nk(a) in nk(k) for a in al)), None)
+        if k: m[f] = k
+    return m, keys
+def to_rows(items, year, basis, m, label):
+    out = []
     for it in items:
-        rec={f:(to_num(it.get(m[f])) if f=="grant" else str(it.get(m[f],"")).strip()) for f in m}
-        rec.setdefault("project",""); rec.setdefault("recipient","")
-        rec["note"]=f"공시ID:{rec.get('note','')}"
-        rec["_basis"]=basis; rec["_year"]=year
+        rec = {f: (to_num(it.get(m[f])) if f == "grant" else str(it.get(m[f], "")).strip()) for f in m}
+        rec.setdefault("project", ""); rec.setdefault("recipient", "")
+        rec["note"] = "공시ID:" + rec.get("note", "")
+        rec["_year"] = year; rec["_basis"] = basis
+        if not rec.get("grantor"): rec["grantor"] = label
         if rec.get("project") or rec.get("recipient"): out.append(rec)
     return out
 
-def daterange_windows(y):
-    # 공시일은 회계연도 종료 후 이듬해 상반기 집중. 넓게 잡고 분할로 좁힌다.
-    return (f"{y}0101", f"{y+2}1231")
+FETCH = ("async (a)=>{const[ep,body]=a;try{"
+ "const r=await fetch(ep,{method:'POST',credentials:'include',"
+ "headers:{'Content-Type':'application/x-www-form-urlencoded; charset=UTF-8','X-Requested-With':'XMLHttpRequest'},body});"
+ "const t=await r.text();try{return{ok:true,status:r.status,json:JSON.parse(t)};}"
+ "catch(e){return{ok:false,status:r.status,text:t.slice(0,300)};}}catch(e){return{ok:false,err:String(e)};}}")
+
+def post(page, ep, params, tries=3):
+    body = "&".join(f"{k}={v}" for k, v in params.items())
+    last = None
+    for _ in range(tries):
+        r = page.evaluate(FETCH, [ep, body])
+        if isinstance(r, dict) and r.get("ok"): return r
+        last = r; page.wait_for_timeout(1000)
+    return last or {"ok": False}
+
+def search_params(year, page_no, per, basis, lcgv):
+    return {"currentPageNum": str(page_no), "nPageSize": str(per), "countPerPageNum": str(per),
+        "fiscalyear": str(year), "bsnsyear": str(year), "jrsdCode": "",
+        "excInsttNm": "", "ddtlbzNm": "", "dcsnBeginDe": "", "dcsnEndDe": "",
+        "ifpbntSysSeCode": "", "sortOrder": "", "searchFilterYn": "N",
+        "basisCode": basis, "wdrLcgvCode": lcgv, "labSfrndCode": "",
+        "selectedMultiText": "", "selectedMultiType": "", "selectedMultiSysSeCode": ""}
 
 def run(mode="api"):
     from playwright.sync_api import sync_playwright
-    cfg=json.loads((HERE/"config.json").read_text(encoding="utf-8")).get("browser",{}) if (HERE/"config.json").exists() else {}
-    years=cfg.get("years",[2024,2023]); per=int(cfg.get("perPage",100))
-    max_pages=int(cfg.get("maxPages",50)); delay=float(cfg.get("delayMs",600))/1000
-    min_days=int(cfg.get("minWindowDays",3)); max_queries=int(cfg.get("maxQueries",400))
-    RB.mkdir(parents=True,exist_ok=True); DATA.mkdir(exist_ok=True)
-    all_rows=[]; dbg=[]; dumped=[False]; qcount=[0]
-    def d(s): return datetime.datetime.strptime(s,"%Y%m%d").date()
-    def s(dt): return dt.strftime("%Y%m%d")
+    cfg = cfgget()
+    years = cfg.get("years", [2024, 2023]); per = int(cfg.get("perPage", 100))
+    max_pages = int(cfg.get("maxPages", 50)); delay = float(cfg.get("delayMs", 500))/1000
+    max_codes = int(cfg.get("maxCodes", 0))
+    RB.mkdir(parents=True, exist_ok=True); DATA.mkdir(exist_ok=True)
+    all_rows = []; dbg = []
 
     with sync_playwright() as pw:
-        br=pw.chromium.launch(args=["--no-sandbox"])
-        ctx=br.new_context(user_agent=os.environ.get("CRAWL_UA","SubsidyDisclosureResearch/1.0 (public data)"),locale="ko-KR")
-        page=ctx.new_page(); page.set_default_timeout(45000)
-        caught=[]
-        def on_resp(resp):
-            try:
-                u=resp.url
-                if ".do" in u and resp.request.method in ("GET","POST"):
-                    ct=resp.headers.get("content-type","")
-                    if "json" in ct or "text" in ct:
-                        b=resp.text()
-                        if any(x in b for x in ["jrsd","Jrsd","중앙관서","관서","lcgv","Lcgv","지자체","시도","코드","Code"]) and len(b)<200000:
-                            caught.append({"url":u[:120],"len":len(b),"body":b[:8000]})
-            except Exception: pass
-        page.on("response", on_resp)
+        br = pw.chromium.launch(args=["--no-sandbox"])
+        ctx = br.new_context(user_agent=os.environ.get("CRAWL_UA", "SubsidyDisclosureResearch/1.0 (public data)"), locale="ko-KR")
+        page = ctx.new_page(); page.set_default_timeout(45000)
         for a in range(5):
-            try: page.goto(LIST_PAGE,wait_until="domcontentloaded",timeout=60000); page.wait_for_timeout(4000); break
-            except Exception as e: print("goto 재시도",a+1,e); page.wait_for_timeout(3000)
-
-        # ★ B안 우선: 페이지 오염 전에 EA001201.js 원본에서 다운로드 함수·엔드포인트 추출
-        try:
-            jsinfo=page.evaluate("""async ()=>{
-              const out={};
-              let ea = [...document.scripts].map(s=>s.src).find(u=>/EA001201/i.test(u));
-              if(!ea) ea = location.origin + '/js/iptl/ea/EA001201.js';
-              out.jsUrl=ea;
-              const t = await (await fetch(ea)).text();
-              out.jsLen=t.length;
-              const grab=(nm)=>{ const i=t.indexOf('function '+nm); if(i<0) return null;
-                let d=0,j=t.indexOf('{',i); if(j<0) return null;
-                for(let k=j;k<t.length;k++){ if(t[k]==='{')d++; else if(t[k]==='}'){d--; if(d===0) return t.slice(i,k+1);} } return null; };
-              const names=[...t.matchAll(/function\s+(f_[A-Za-z0-9_]*(?:[Ee]xcel|[Dd]own|[Ff]ile|[Ss]ave|[Xx]ls|[Pp]rint)[A-Za-z0-9_]*)\s*\(/g)].map(m=>m[1]);
-              out.funcNames=[...new Set(names)];
-              out.funcs=out.funcNames.map(nm=>({nm, src:(grab(nm)||'').slice(0,2500)}));
-              out.doPaths=[...new Set([...t.matchAll(/["'](\/[A-Za-z0-9_\/]+\.do)["']/g)].map(m=>m[1]))];
-              // 엑셀/다운로드 키워드 주변 라인
-              out.hints=[...t.matchAll(/.{0,80}(?:엑셀|파일저장|excelDown|fileDown|makeExcel|downExcel|xls).{0,120}/gi)].map(m=>m[0]).slice(0,15);
-              return out;
-            }""")
-            (RB/"js-download.json").write_text(json.dumps(jsinfo,ensure_ascii=False,indent=1)[:400000],encoding="utf-8")
-            print("JS 추출:",jsinfo.get("jsLen"),"함수",jsinfo.get("funcNames"))
-
-        # ★ 자치단체/중앙관서 코드 목록 API 호출 (그동안 못 찾던 코드 소스)
-        try:
-            codes=page.evaluate("""async ()=>{
-              const out={};
-              async function post(url, body){
-                try{ const r=await fetch(url,{method:'POST',credentials:'include',
-                  headers:{'Content-Type':'application/x-www-form-urlencoded; charset=UTF-8','X-Requested-With':'XMLHttpRequest'},
-                  body: body||''});
-                  const t=await r.text(); try{return {status:r.status,json:JSON.parse(t)};}catch(e){return {status:r.status,text:t.slice(0,400)};} }
-                catch(e){ return {err:String(e)}; }
-              }
-              out.wdrLcgv = await post('/ea/getWdrLcgvCodeList.do','basisCode=2');
-              out.labSfrnd = await post('/ea/getLabSfrndCodeList.do','basisCode=2');
-              out.combo = await post('/comm/retrieveCommComboList.do','');
-              return out;
-            }""")
-            (RB/"code-api.json").write_text(json.dumps(codes,ensure_ascii=False,indent=1)[:200000],encoding="utf-8")
-            def cnt(x):
-                j=x.get("json") if isinstance(x,dict) else None
-                it=find_list(j) if j else None
-                return len(it) if it else 0
-            print("자치단체코드:",cnt(codes.get("wdrLcgv",{})),"labSfrnd:",cnt(codes.get("labSfrnd",{})))
-        except Exception as e:
-            (RB/"code-api.json").write_text(json.dumps({"error":str(e)},ensure_ascii=False),encoding="utf-8")
-            print("코드 API 실패:",e)
-        except Exception as e:
-            (RB/"js-download.json").write_text(json.dumps({"error":str(e)},ensure_ascii=False),encoding="utf-8")
-            print("JS 추출 실패:",e)
-        # 국고 라디오/구분 선택을 시도해 관서 콤보 로드 유발
-        try:
-            page.evaluate("""()=>{
-              document.querySelectorAll('input[type=radio]').forEach(r=>{if(/001|국고/.test(r.value+r.name)){r.checked=true;r.dispatchEvent(new Event('click',{bubbles:true}));r.dispatchEvent(new Event('change',{bubbles:true}));}});
-              const s=document.querySelector('#EA001201Frm_basisCode,select[id$=_basisCode]');if(s){s.value='1';s.dispatchEvent(new Event('change',{bubbles:true}));}
-            }""")
-            page.wait_for_timeout(4000)
-        except Exception: pass
-        (RB/"combo-responses.json").write_text(json.dumps(caught,ensure_ascii=False,indent=1)[:400000],encoding="utf-8")
-        print("콤보 후보 응답",len(caught),"건")
-
-        # ★ 페이지의 f_search가 만드는 실제 요청/응답 캡처 (정답 파라미터 확보)
-        real={"reqs":[],"resps":[]}
-        def on_req(req):
-            if "retrieveInfoPblntfTrgetMngList" in req.url:
-                real["reqs"].append({"m":req.method,"pd":req.post_data or "","hdr":dict(req.headers)})
-        def on_resp2(resp):
-            if "retrieveInfoPblntfTrgetMngList" in resp.url:
-                try: real["resps"].append({"status":resp.status,"body":resp.text()[:6000]})
-                except Exception as e: real["resps"].append({"err":str(e)})
-        page.on("request", on_req); page.on("response", on_resp2)
-        # 지방(basisCode=2)로 전환 후 연도 세팅하고 f_search 직접 호출
-        for basis_try in ["2","1"]:
             try:
-                page.evaluate("""(a)=>{
-                  const [y, basis] = a;
-                  const setv=(sel,v)=>{const el=document.querySelector(sel); if(el){el.value=v; el.dispatchEvent(new Event('change',{bubbles:true}));}};
-                  document.querySelectorAll('input[name*=basisCode]').forEach(r=>{if(r.value===basis){r.checked=true;r.dispatchEvent(new Event('click',{bubbles:true}));}});
-                  setv('#EA001201Frm_basisCode', basis);
-                  setv('#EA001201Frm_fsyr', String(y)); setv('#EA001201Frm_bsnsyear', String(y));
-                  setv('select[id$=_fsyr]', String(y)); setv('select[id$=_bsnsyear]', String(y));
-                }""", [years[0], basis_try])
-                page.wait_for_timeout(1500)
-                page.evaluate("()=>{ if(typeof f_search==='function') f_search(); }")
-                page.wait_for_timeout(5000)
+                page.goto(LIST_PAGE, wait_until="domcontentloaded", timeout=60000); page.wait_for_timeout(3000); break
             except Exception as e:
-                real.setdefault("errors",[]).append(f"{basis_try}:{e}")
-        (RB/"real-request.json").write_text(json.dumps(real,ensure_ascii=False,indent=1)[:400000],encoding="utf-8")
-        print("실제 요청 캡처:",len(real["reqs"]),"응답:",len(real["resps"]))
+                print("goto 재시도", a+1, e); page.wait_for_timeout(3000)
 
-        # ★ 모든 select의 옵션 덤프 (자치단체/중앙관서 실제 코드 형식 확인)
-        page.wait_for_timeout(3000)
-        selects=page.evaluate("""()=>[...document.querySelectorAll('select')].map(s=>({
-            id:s.id, name:s.name,
-            opts:[...s.options].slice(0,12).map(o=>[o.value,o.text]),
-            n:s.options.length}))""")
-        (RB/"all-selects.json").write_text(json.dumps(selects,ensure_ascii=False,indent=1),encoding="utf-8")
-        # 자치단체/중앙관서 관련 요소 outerHTML도
-        rel=page.evaluate("""()=>{
-            const out=[]; 
-            document.querySelectorAll('select,[id*=jrsd],[id*=Lcgv],[id*=lcgv]').forEach(el=>{
-              if(/jrsd|lcgv|자치|관서/i.test(el.id+el.name)) out.push({id:el.id,name:el.name,html:el.outerHTML.slice(0,1500)});
-            }); return out;}""")
-        (RB/"code-elements.json").write_text(json.dumps(rel,ensure_ascii=False,indent=1),encoding="utf-8")
-        print("select",len(selects),"개, 코드요소",len(rel),"개 덤프")
+        # 1) 자치단체 코드 목록 확보
+        codes = []
+        r = post(page, LCGV_EP, {"basisCode": "2"})
+        (RB/"lcgv-codes.json").write_text(json.dumps(r, ensure_ascii=False)[:120000], encoding="utf-8")
+        items = find_list(r.get("json")) if isinstance(r, dict) and r.get("json") else None
+        if items:
+            # 코드/이름 키 탐지
+            k0 = list(items[0].keys())
+            ck = next((k for k in k0 if re.search(r"code|cd", k, re.I)), k0[0])
+            nk_ = next((k for k in k0 if re.search(r"nm|name|텍스트|text", k, re.I)), (k0[1] if len(k0) > 1 else k0[0]))
+            codes = [(str(it.get(ck, "")).strip(), str(it.get(nk_, "")).strip()) for it in items if str(it.get(ck, "")).strip()]
+        print("자치단체 코드:", len(codes), codes[:5])
+        dbg.append({"lcgvCount": len(codes), "sample": codes[:5]})
+        if max_codes: codes = codes[:max_codes]
 
-        # ★★ B안: 포털 클라이언트 JS 원본을 읽어 '파일 저장'(엑셀) 엔드포인트·파라미터 확정
-        jsinfo=page.evaluate("""async ()=>{
-          const out={scripts:[], funcs:[], download:null};
-          // 로드된 스크립트 URL 목록
-          out.scripts=[...document.scripts].map(s=>s.src).filter(Boolean).slice(0,40);
-          // EA001201 관련 JS 원본 fetch
-          const ea=out.scripts.find(u=>/EA001201/i.test(u));
-          if(ea){
-            try{ const t=await (await fetch(ea)).text();
-              out.jsLen=t.length;
-              // 다운로드/엑셀/파일 함수 블록 추출
-              const names=[...t.matchAll(/function\s+(f_[A-Za-z0-9_]*(?:[Ee]xcel|[Dd]own|[Ff]ile|[Ss]ave|[Xx]ls)[A-Za-z0-9_]*)\s*\(/g)].map(m=>m[1]);
-              out.funcNames=[...new Set(names)];
-              // 각 함수 소스 잘라내기
-              const grab=(nm)=>{ const i=t.indexOf('function '+nm); if(i<0) return null;
-                let d=0,j=t.indexOf('{',i); if(j<0) return t.slice(i,i+400);
-                for(let k=j;k<t.length&&k<j+4000;k++){ if(t[k]==='{')d++; else if(t[k]==='}'){d--; if(d===0) return t.slice(i,k+1);} }
-                return t.slice(i,i+2000); };
-              out.funcs=out.funcNames.slice(0,8).map(nm=>({nm, src:grab(nm)}));
-              // .do 다운로드 경로 후보
-              out.doPaths=[...new Set([...t.matchAll(/["'](\/[A-Za-z0-9_\/]+\.do)["']/g)].map(m=>m[1]))].slice(0,30);
-            }catch(e){ out.err=String(e); }
-          }
-          // 페이지 내 '파일 저장/엑셀' 버튼 onclick
-          out.buttons=[...document.querySelectorAll('a,button,input')].filter(el=>/파일|저장|엑셀|excel|다운/i.test(el.textContent+el.value+el.title+(el.onclick||''))).slice(0,10).map(el=>({t:(el.textContent||el.value||'').trim().slice(0,20), onclick:(el.getAttribute('onclick')||'').slice(0,160), id:el.id}));
-          return out;
-        }""")
-        (RB/"js-download.json").write_text(json.dumps(jsinfo,ensure_ascii=False,indent=1)[:300000],encoding="utf-8")
-        print("스크립트",len(jsinfo.get("scripts",[])),"다운로드함수",jsinfo.get("funcNames"),"버튼",len(jsinfo.get("buttons",[])))
-        truth={"skipped":"B mode recon"}
-
-        def collect_window(year, basis, beg, end):
-            """[beg,end] 창을 수집. 범위 초과면 반으로 분할 재귀."""
-            if qcount[0]>=max_queries: return
-            qcount[0]+=1
-            r=call(page, params(year,1,per,basis,beg,end))
-            if not dumped[0]:
-                (RB/"api-first.json").write_text(json.dumps(r,ensure_ascii=False)[:200000],encoding="utf-8"); dumped[0]=True
-            if not isinstance(r,dict) or not r.get("ok"):
-                dbg.append({"y":year,"basis":basis,"win":[beg,end],"fail":str(r)[:150]}); return
-            js=r["json"]; err=js.get("ERROR-0000") if isinstance(js,dict) else None
-            items=find_list(js)
-            if err and ("초과" in err or "범위" in err) and not items:
-                b,e=d(beg),d(end)
-                if (e-b).days<=min_days:
-                    dbg.append({"y":year,"basis":basis,"win":[beg,end],"note":"최소창인데 초과 — 스킵"}); return
-                mid=b+(e-b)/2
-                collect_window(year,basis,beg,s(mid)); time.sleep(delay)
-                collect_window(year,basis,s(mid+datetime.timedelta(days=1)),end); return
-            if not items:
-                if len(dbg)<12: dbg.append({"y":year,"basis":basis,"win":[beg,end],"err":err,"topkeys":list(js.keys())[:12] if isinstance(js,dict) else str(type(js))})
-                return
-            m,keys=map_items(items)
-            if len([x for x in dbg if x.get("mappedTo")])<2:
-                dbg.append({"y":year,"basis":basis,"itemKeys":keys[:30],"mappedTo":m,"count":len(items)})
-            all_rows.extend(to_rows(items,year,basis,m))
-            # 페이지네이션
-            pageno=2
-            while len(items)>=per and pageno<=max_pages and qcount[0]<max_queries:
-                qcount[0]+=1; time.sleep(delay)
-                r2=call(page, params(year,pageno,per,basis,beg,end))
-                if not (isinstance(r2,dict) and r2.get("ok")): break
-                items=find_list(r2["json"]) or []
-                if not items: break
-                all_rows.extend(to_rows(items,year,basis,m)); pageno+=1
-            print(f"{year} basis{basis} [{beg}-{end}]: 누적 {len(all_rows)}행 (q{qcount[0]})")
-
-        # 1) 보조사업자구분(ifpbntSysSeCode) 부분집합으로 좁혀 조회 — 관서 코드 불필요
-        probe=[]
-        SYS=[("","전체"),("002","사회복지시설"),("003","보육시설")]
-        # 형식 검증용: 5자리 시군구 / 2·4자리 시도 후보를 wdrLcgvCode에 넣어본다
-        LCGV_TEST=[("11110","서울 종로구"),("11680","서울 강남구"),("26110","부산 중구"),
-                   ("41111","수원 장안구"),("29110","광주 동구"),("11000","서울(4자리계열11)"),
-                   ("1100000000","서울10자리"),("3611000000","세종10자리"),("2611000000","부산중구10자리")]
-        def q(y,basis,sysse,lcgv):
-            return dict(currentPageNum="1",countPerPageNum=str(per),fiscalyear=str(y),bsnsyear=str(y),
-                jrsdCode="",excInsttNm="",ddtlbzNm="",dcsnBeginDe="",dcsnEndDe="",
-                ifpbntSysSeCode=sysse,sortOrder="",searchFilterYn="N",basisCode=basis,
-                wdrLcgvCode=lcgv,labSfrndCode="",selectedMultiText="",selectedMultiType="",selectedMultiSysSeCode=sysse)
-        plans2=[]
-        y0=years[0]
-        for lc,lnm in LCGV_TEST:
-            plans2.append((y0,"2","",lc,f"지방/{lnm}({lc})"))
-        for (y,basis,sysse,lcgv,label) in plans2:
-            if qcount[0]>=max_queries: break
-            qcount[0]+=1
-            r=call(page,q(y,basis,sysse,lcgv))
-            js=r.get("json") if isinstance(r,dict) else None
-            err=js.get("ERROR-0000") if isinstance(js,dict) else None
-            items=find_list(js) if js else None
-            probe.append({"label":label,"y":y,"err":err,"items":(len(items) if items else 0)})
-            if items:
-                m,keys=map_items(items)
-                if not any(x.get("mappedTo") for x in dbg): dbg.append({"label":label,"itemKeys":keys[:30],"mappedTo":m})
-                all_rows.extend(to_rows(items,y,basis,m))
-                pageno=2
-                while len(items)>=per and pageno<=max_pages and qcount[0]<max_queries:
-                    qcount[0]+=1; time.sleep(delay)
-                    r2=call(page,{**q(y,basis,sysse,lcgv),"currentPageNum":str(pageno)})
-                    items=find_list(r2.get("json")) if isinstance(r2,dict) else None
-                    if not items: break
-                    all_rows.extend(to_rows(items,y,basis,m)); pageno+=1
-                print(f"{label} {y}: 누적 {len(all_rows)}행")
-            time.sleep(delay)
-        (RB/"sys-probe.json").write_text(json.dumps(probe,ensure_ascii=False,indent=1),encoding="utf-8")
-        br.close()
-        _oldprobe=[]
-        for y in []:
-            beg,end=daterange_windows(y)
-            for code,nm in SIDO:
-                if qcount[0]>=max_queries: break
-                qcount[0]+=1
-                pr=dict(currentPageNum="1",countPerPageNum=str(per),fiscalyear=str(y),bsnsyear=str(y),
-                        jrsdCode="",excInsttNm="",ddtlbzNm="",dcsnBeginDe="",dcsnEndDe="",
-                        ifpbntSysSeCode="",sortOrder="",searchFilterYn="N",basisCode="2",
-                        wdrLcgvCode=code,labSfrndCode="",selectedMultiText="",selectedMultiType="",selectedMultiSysSeCode="")
-                r=call(page,pr)
-                js=r.get("json") if isinstance(r,dict) else None
-                err=js.get("ERROR-0000") if isinstance(js,dict) else None
-                items=find_list(js) if js else None
-                probe.append({"y":y,"sido":f"{code}/{nm}","err":err,"items":(len(items) if items else 0)})
-                if items:
-                    m,keys=map_items(items)
-                    if not any(x.get("mappedTo") for x in dbg): dbg.append({"sido":nm,"itemKeys":keys[:30],"mappedTo":m})
-                    all_rows.extend(to_rows(items,y,"2",m))
-                    pageno=2
-                    while len(items)>=per and pageno<=max_pages and qcount[0]<max_queries:
-                        qcount[0]+=1; time.sleep(delay)
-                        r2=call(page,{**pr,"currentPageNum":str(pageno)})
-                        items=find_list(r2.get("json")) if isinstance(r2,dict) else None
-                        if not items: break
-                        all_rows.extend(to_rows(items,y,"2",m)); pageno+=1
-                    print(f"{y} 지방 {nm}: 누적 {len(all_rows)}행")
-                time.sleep(delay)
-        (RB/"sido-probe.json").write_text(json.dumps(probe,ensure_ascii=False,indent=1),encoding="utf-8")
+        # 2) 코드별 지방보조사업 검색 (유효 코드 → 조회상한 회피)
+        for code, nm in codes:
+            for y in years:
+                page_no = 1
+                while page_no <= max_pages:
+                    rr = post(page, SEARCH_EP, search_params(y, page_no, per, "2", code))
+                    js = rr.get("json") if isinstance(rr, dict) else None
+                    err = js.get("ERROR-0000") if isinstance(js, dict) else None
+                    its = find_list(js) if js else None
+                    if not its:
+                        if page_no == 1 and len([d for d in dbg if d.get("firstErr")]) < 6:
+                            dbg.append({"code": code, "nm": nm, "y": y, "firstErr": err})
+                        break
+                    m, keys = map_items(its)
+                    if not any(d.get("mappedTo") for d in dbg):
+                        dbg.append({"mappedTo": m, "itemKeys": keys[:30]})
+                    got = to_rows(its, y, "2", m, f"지방/{nm}")
+                    all_rows.extend(got)
+                    if page_no == 1:
+                        print(f"지방 {nm}({code}) {y}: {len(got)}행 (누적 {len(all_rows)})")
+                    if len(its) < per: break
+                    page_no += 1; time.sleep(delay)
+                time.sleep(delay*0.5)
         br.close()
 
-    (RB/"api-debug.json").write_text(json.dumps(dbg,ensure_ascii=False,indent=1),encoding="utf-8")
     # 중복 제거
-    seen=set(); uniq=[]
+    seen = set(); uniq = []
     for r in all_rows:
-        k=(r.get("project"),r.get("recipient"),r.get("note"),r.get("_year"))
+        k = (r.get("project"), r.get("recipient"), r.get("note"), r.get("_year"))
         if k not in seen: seen.add(k); uniq.append(r)
+    (RB/"api-debug.json").write_text(json.dumps(dbg, ensure_ascii=False, indent=1), encoding="utf-8")
     if uniq:
         (DATA/"disclosures.json").write_text(json.dumps(
-            {"collectedAt":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),"source":LIST_PAGE,
-             "rowCount":len(uniq),"rows":uniq},ensure_ascii=False),encoding="utf-8")
-        ranked=analyze(uniq)
+            {"collectedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "source": LIST_PAGE,
+             "rowCount": len(uniq), "rows": uniq}, ensure_ascii=False), encoding="utf-8")
+        ranked = analyze(uniq)
         (DATA/"analysis.json").write_text(json.dumps(
-            {"analyzedAt":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),
-             "projectCount":len(ranked),"projects":ranked},ensure_ascii=False),encoding="utf-8")
-        print(f"완료: 수집 {len(uniq)}행 / 사업 {len(ranked)} / 쿼리 {qcount[0]}")
+            {"analyzedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+             "projectCount": len(ranked), "projects": ranked}, ensure_ascii=False), encoding="utf-8")
+        print(f"완료: 수집 {len(uniq)}행 / 사업 {len(ranked)}")
     else:
-        print(f"데이터 없음 (쿼리 {qcount[0]}) — api-debug.json / api-first.json 확인")
+        print("데이터 없음 — data/recon-browser/api-debug.json, lcgv-codes.json 확인")
 
-if __name__=="__main__": run()
+if __name__ == "__main__":
+    run()
