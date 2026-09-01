@@ -153,6 +153,8 @@ def run(mode):
         page.on("response", on_resp)
         dialogs=[]
         page.on("dialog", lambda d:(dialogs.append(d.message), d.accept()))
+        consolelog=[]
+        page.on("console", lambda m: consolelog.append(f"{m.type}: {m.text}"[:200]))
         page.goto(list_url, wait_until="domcontentloaded", timeout=60000)
         page.wait_for_timeout(3000)
 
@@ -168,6 +170,10 @@ def run(mode):
             RB.mkdir(parents=True, exist_ok=True)
             page.screenshot(path=str(RB/"01-list.png"), full_page=True)
             (RB/"01-list.html").write_text(page.content(), encoding="utf-8")
+            # 조회 전 후보 버튼 가시성 진단
+            search_btns=page.eval_on_selector_all("button,a,input[type=button],input[type=submit]",
+              "els=>els.filter(e=>/조회|검색/.test(e.innerText||e.value||'')).map(e=>({tag:e.tagName,cls:e.className.slice(0,40),vis:e.offsetParent!==null,oc:(e.getAttribute('onclick')||'').slice(0,60)}))")
+            has_fsearch=page.evaluate("()=>({f_search:typeof f_search,fn_search:typeof window.fn_search,keys:Object.keys(window).filter(k=>/search/i.test(k)).slice(0,10)})")
             do_search(page, years[0])
             page.screenshot(path=str(RB/"02-searched.png"), full_page=True)
             (RB/"02-searched.html").write_text(page.content(), encoding="utf-8")
@@ -188,7 +194,8 @@ def run(mode):
               "els=>els.slice(0,20).map(e=>({t:e.innerText.trim().slice(0,40),oc:(e.getAttribute('onclick')||'').slice(0,120),href:(e.getAttribute('href')||'').slice(0,80)}))")
             tables=read_tables(page)
             report={"url":list_url,"year":years[0],"tableCount":len(tables),
-                    "netlog":netlog,"yearOptions":year_opts,"dialogs":dialogs,
+                    "netlog":netlog,"yearOptions":year_opts,"dialogs":dialogs,"console":consolelog[-30:],
+                    "searchButtons":search_btns,"searchFns":has_fsearch,
                     "resultLinks":links,
                     "tables":[{"caption":t["caption"],"headerGuess":t["rows"][0][:14],
                                "rowCount":len(t["rows"]),
