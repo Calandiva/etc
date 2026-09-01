@@ -8,6 +8,10 @@ from model import analyze
 DATA=ROOT/"data"; RB=DATA/"recon-browser"
 BASE="https://www.bojo.go.kr"; LIST_PAGE=BASE+"/ea/getEA001201View.do"
 DATA_EP="/ea/retrieveInfoPblntfTrgetMngList.do"
+# 행정표준 시도 코드 (지방보조사업 wdrLcgvCode 후보)
+SIDO=[("11","서울"),("26","부산"),("27","대구"),("28","인천"),("29","광주"),("30","대전"),
+      ("31","울산"),("36","세종"),("41","경기"),("43","충북"),("44","충남"),("46","전남"),
+      ("47","경북"),("48","경남"),("50","제주"),("51","강원"),("52","전북")]
 FETCH_JS = (
  "async (a)=>{const[ep,data]=a;"
  "const body=Object.entries(data).map(([k,v])=>encodeURIComponent(k)+'='+encodeURIComponent(v)).join('&');"
@@ -151,10 +155,36 @@ def run(mode="api"):
                 all_rows.extend(to_rows(items,year,basis,m)); pageno+=1
             print(f"{year} basis{basis} [{beg}-{end}]: 누적 {len(all_rows)}행 (q{qcount[0]})")
 
+        # 1) 지방: 표준 시도코드가 wdrLcgvCode로 통하는지 검증하며 수집
+        probe=[]
         for y in years:
             beg,end=daterange_windows(y)
-            for basis in ["1","2"]:
-                collect_window(y, basis, beg, end); time.sleep(delay)
+            for code,nm in SIDO:
+                if qcount[0]>=max_queries: break
+                qcount[0]+=1
+                pr=dict(currentPageNum="1",countPerPageNum=str(per),fiscalyear=str(y),bsnsyear=str(y),
+                        jrsdCode="",excInsttNm="",ddtlbzNm="",dcsnBeginDe="",dcsnEndDe="",
+                        ifpbntSysSeCode="",sortOrder="",searchFilterYn="N",basisCode="2",
+                        wdrLcgvCode=code,labSfrndCode="",selectedMultiText="",selectedMultiType="",selectedMultiSysSeCode="")
+                r=call(page,pr)
+                js=r.get("json") if isinstance(r,dict) else None
+                err=js.get("ERROR-0000") if isinstance(js,dict) else None
+                items=find_list(js) if js else None
+                probe.append({"y":y,"sido":f"{code}/{nm}","err":err,"items":(len(items) if items else 0)})
+                if items:
+                    m,keys=map_items(items)
+                    if not any(x.get("mappedTo") for x in dbg): dbg.append({"sido":nm,"itemKeys":keys[:30],"mappedTo":m})
+                    all_rows.extend(to_rows(items,y,"2",m))
+                    pageno=2
+                    while len(items)>=per and pageno<=max_pages and qcount[0]<max_queries:
+                        qcount[0]+=1; time.sleep(delay)
+                        r2=call(page,{**pr,"currentPageNum":str(pageno)})
+                        items=find_list(r2.get("json")) if isinstance(r2,dict) else None
+                        if not items: break
+                        all_rows.extend(to_rows(items,y,"2",m)); pageno+=1
+                    print(f"{y} 지방 {nm}: 누적 {len(all_rows)}행")
+                time.sleep(delay)
+        (RB/"sido-probe.json").write_text(json.dumps(probe,ensure_ascii=False,indent=1),encoding="utf-8")
         br.close()
 
     (RB/"api-debug.json").write_text(json.dumps(dbg,ensure_ascii=False,indent=1),encoding="utf-8")
