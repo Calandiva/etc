@@ -71,10 +71,30 @@ def run():
         (RB/"openapi-debug.json").write_text(json.dumps({"error":"no key"},ensure_ascii=False),encoding="utf-8")
         return
     all_rows=[]; dbg=[]
+    # 파라미터 조합 자동 탐색(어떤 조합이 데이터를 주는지)
+    probe=[]
+    for ep in ENDPOINTS:
+        for variant in [
+            {"resultType":"json"}, {"type":"json"}, {"dataType":"json"},
+            {"_type":"json"}, {},  # 기본(XML)
+        ]:
+            q=dict(serviceKey=key, pageNo=1, numOfRows=10, **variant)
+            url=f"{ep}?"+urllib.parse.urlencode(q, safe="%")
+            try: body=get(url)
+            except Exception as e: probe.append({"variant":variant,"error":str(e)}); continue
+            items=None
+            try: items=find_items(json.loads(body))
+            except Exception: items=xml_items(body)
+            probe.append({"variant":variant,"len":len(body),"items":(len(items) if items else 0),"head":body[:160]})
+            if items:
+                probe.append({"WORKING":variant}); break
+    (RB/"openapi-probe.json").write_text(json.dumps(probe,ensure_ascii=False,indent=1),encoding="utf-8")
+    working=next((p["WORKING"] for p in probe if p.get("WORKING")), {"resultType":"json"})
+    print("작동 조합:", working)
     for ep in ENDPOINTS:
         page=1
         while page<=int(os.environ.get("MAX_PAGES","30")):
-            qs=urllib.parse.urlencode({"serviceKey":key,"pageNo":page,"numOfRows":500,"resultType":"json"}, safe="%")
+            qs=urllib.parse.urlencode(dict(serviceKey=key,pageNo=page,numOfRows=500,**working), safe="%")
             url=f"{ep}?{qs}"
             try: body=get(url)
             except Exception as e: dbg.append({"ep":ep,"page":page,"error":str(e)}); break
