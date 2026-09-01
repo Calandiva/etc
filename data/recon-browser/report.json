@@ -82,6 +82,44 @@
   }
  ],
  "dialogs": [],
+ "console": [],
+ "searchButtons": [
+  {
+   "tag": "BUTTON",
+   "cls": "largeBtn fill black searchButton",
+   "vis": true,
+   "oc": "f_search()"
+  },
+  {
+   "tag": "BUTTON",
+   "cls": "largeBtn black btnSearchHelp",
+   "vis": true,
+   "oc": ""
+  },
+  {
+   "tag": "BUTTON",
+   "cls": "largeBtn fill black searchButton",
+   "vis": true,
+   "oc": "f_search()"
+  },
+  {
+   "tag": "BUTTON",
+   "cls": "guideClose",
+   "vis": true,
+   "oc": ""
+  }
+ ],
+ "searchFns": {
+  "f_search": "function",
+  "fn_search": "undefined",
+  "keys": [
+   "onsearch",
+   "f_search",
+   "f_searchRetrieveInfoPblntfTrgetMngList",
+   "f_searchComboDel",
+   "f_searchTextDel"
+  ]
+ },
  "resultLinks": [],
  "tables": [
   {
