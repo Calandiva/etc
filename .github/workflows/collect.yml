@@ -8,7 +8,7 @@ on:
         required: true
         default: "recon"
         type: choice
-        options: [browser-api, api-probe, recon, browser-recon, collect, browser-collect, download]
+        options: [openapi, browser-api, api-probe, recon, browser-recon, collect, browser-collect, download]
   schedule:
     - cron: "0 21 * * 1"   # 매주 화요일 06:00 KST — 공시 갱신 반영
 
@@ -35,11 +35,13 @@ jobs:
         continue-on-error: true
         env:
           MODE: ${{ github.event.inputs.mode || 'browser-collect' }}
+          DATA_GO_KR_KEY: ${{ secrets.DATA_GO_KR_KEY }}
         run: |
           case "$MODE" in
             recon)          python crawler/collect.py recon ;;
             collect)        python crawler/collect.py collect ;;
             browser-recon)  python crawler/browse.py recon ;;
+            openapi)        python crawler/collect_openapi.py ;;
             browser-api)    python crawler/browse_api.py ;;
             api-probe)      python crawler/api_probe.py ;;
             download)       python crawler/browse.py download ;;
