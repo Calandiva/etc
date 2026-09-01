@@ -1,0 +1,659 @@
+[
+ {
+  "name": "bojo-home",
+  "url": "https://www.bojo.go.kr/bojo.do",
+  "method": "GET",
+  "data": null,
+  "robots": "robots.txt 허용",
+  "status": 200,
+  "finalUrl": "https://www.bojo.go.kr/bojo.do",
+  "bytes": 162932,
+  "contentType": "text/html; charset=UTF-8",
+  "tables": [],
+  "forms": [
+   {
+    "action": "",
+    "method": "POST",
+    "fields": [
+     "startCount",
+     "sort",
+     "collection",
+     "range",
+     "startDate",
+     "endDate",
+     "searchField",
+     "reQuery",
+     "realQuery",
+     "sido",
+     "sigungu",
+     "CYEAR",
+     "AA001000nttId",
+     "AA001000sjCn",
+     "AA001000siteId",
+     "AA001000noticeSeCode",
+     "query"
+    ]
+   },
+   {
+    "action": "",
+    "method": "POST",
+    "fields": [
+     "jsonData"
+    ]
+   },
+   {
+    "action": "",
+    "method": "POST",
+    "fields": []
+   }
+  ],
+  "xhrCandidates": [
+   "/bojo.do",
+   "/ja/getJA009000Popup.do",
+   "/ka/getKA003100View.do",
+   "/retrieveSearchWise.do",
+   "/zz/actionPrint.do",
+   "/zz/logout.do",
+   "/zz/reLogin.do",
+   "/zz/registWebLog.do",
+   "/zz/searchTopView.do"
+  ],
+  "onclickSamples": [
+   "javascript:sims.comm.setFocusObj($('.swiperNoticeBt'));fn_notice_popup('N_00302549');",
+   "javascript:sims.comm.setFocusObj(this);f_mailPopup('mailInsert')",
+   "javascript:removeAllMyKeyword();",
+   "pageInit_main('USRM_10021','/ga/retrieveReport.do','1',2,'참여와 소통','부정수급 제보');$('body, html').animate({scrollTop : 0}, 200);",
+   "javascript:sims.comm.setFocusObj(this);fn_notice_popup_msg('N_00302549')"
+  ],
+  "title": "홈 | 보조금통합포털"
+ },
+ {
+  "name": "bojo-ea-guide",
+  "url": "https://www.bojo.go.kr/ea/getEA001101View.do",
+  "method": "GET",
+  "data": null,
+  "robots": "robots.txt 허용",
+  "status": 200,
+  "finalUrl": "https://www.bojo.go.kr/ea/getEA001101View.do",
+  "bytes": 18168,
+  "contentType": "text/html; charset=UTF-8",
+  "tables": [],
+  "forms": [],
+  "xhrCandidates": [],
+  "onclickSamples": [
+   "f_movePage(this);"
+  ],
+  "title": ""
+ },
+ {
+  "name": "bojo-ea-list",
+  "url": "https://www.bojo.go.kr/ea/getEA001201View.do",
+  "method": "GET",
+  "data": null,
+  "robots": "robots.txt 허용",
+  "status": 200,
+  "finalUrl": "https://www.bojo.go.kr/ea/getEA001201View.do",
+  "bytes": 73538,
+  "contentType": "text/html; charset=UTF-8",
+  "tables": [
+   {
+    "index": 1,
+    "score": 3,
+    "header": [
+     "공시일",
+     "보조사업자가 공시자료를 등록한 공시일자 지정"
+    ],
+    "rows": 2,
+    "caption": "보조사업자공시 목록 추가 조회 조건 - 보조사업자구분, 공시일, 수행기관명, 보조사업명으로 구성"
+   },
+   {
+    "index": 0,
+    "score": 1,
+    "header": [
+     "회계연도 * 필수 조회 조건",
+     "연단위로 사업 귀속 회계연도 지정"
+    ],
+    "rows": 4,
+    "caption": "보조사업자공시 목록 기본 조회 조건 - 회계연도, 사업연도, 공시근거, 중앙관서, 지방자치단체로 구성"
+   }
+  ],
+  "forms": [
+   {
+    "action": "",
+    "method": "POST",
+    "fields": [
+     "currentPageNum",
+     "countPerPageNum",
+     "fiscalyear",
+     "bsnsyear",
+     "jrsdCode",
+     "excInsttNm",
+     "ddtlbzNm",
+     "dcsnBeginDe",
+     "dcsnEndDe",
+     "ifpbntSysSeCode",
+     "sortOrder",
+     "searchFilterYn",
+     "excInsttNmSearchFilterAdd",
+     "excInsttNmSearchFilterDel",
+     "ddtlbzNmSearchFilterAdd",
+     "ddtlbzNmSearchFilterDel",
+     "fileGubun",
+     "fileEncodingType",
+     "fileHeaderStr",
+     "fileDataMapper",
+     "fileNm",
+     "fieldType",
+     "fieldType2",
+     "fieldType3",
+     "fileCellWidth"
+    ]
+   },
+   {
+    "action": "",
+    "method": "GET",
+    "fields": [
+     "fiscalyear",
+     "bsnsyear",
+     "dtlbzId",
+     "dtlbzNm",
+     "ddtlbzId",
+     "excInsttId",
+     "excInsttNm",
+     "hwipnBassId",
+     "dcsnDe",
+     "excclcReprtType"
+    ]
+   },
+   {
+    "action": "",
+    "method": "GET",
+    "fields": [
+     "auditPntoutPblntfAt",
+     "auditReprtPblntfAt",
+     "excclcRpvfrtPblntfAt",
+     "fnlttBlshPblntfAt",
+     "etcNtfcMatterPblntfAt",
+     "impprpPblntfAt"
+    ]
+   }
+  ],
+  "xhrCandidates": [],
+  "onclickSamples": [
+   "f_search()",
+   "f_openJA005101(this)"
+  ],
+  "title": ""
+ },
+ {
+  "name": "bojo-ea-list-p1",
+  "url": "https://www.bojo.go.kr/ea/getEA001201View.do",
+  "method": "POST",
+  "data": "pageIndex=1",
+  "robots": "robots.txt 허용",
+  "status": 200,
+  "finalUrl": "https://www.bojo.go.kr/ea/getEA001201View.do",
+  "bytes": 73538,
+  "contentType": "text/html; charset=UTF-8",
+  "tables": [
+   {
+    "index": 1,
+    "score": 3,
+    "header": [
+     "공시일",
+     "보조사업자가 공시자료를 등록한 공시일자 지정"
+    ],
+    "rows": 2,
+    "caption": "보조사업자공시 목록 추가 조회 조건 - 보조사업자구분, 공시일, 수행기관명, 보조사업명으로 구성"
+   },
+   {
+    "index": 0,
+    "score": 1,
+    "header": [
+     "회계연도 * 필수 조회 조건",
+     "연단위로 사업 귀속 회계연도 지정"
+    ],
+    "rows": 4,
+    "caption": "보조사업자공시 목록 기본 조회 조건 - 회계연도, 사업연도, 공시근거, 중앙관서, 지방자치단체로 구성"
+   }
+  ],
+  "forms": [
+   {
+    "action": "",
+    "method": "POST",
+    "fields": [
+     "currentPageNum",
+     "countPerPageNum",
+     "fiscalyear",
+     "bsnsyear",
+     "jrsdCode",
+     "excInsttNm",
+     "ddtlbzNm",
+     "dcsnBeginDe",
+     "dcsnEndDe",
+     "ifpbntSysSeCode",
+     "sortOrder",
+     "searchFilterYn",
+     "excInsttNmSearchFilterAdd",
+     "excInsttNmSearchFilterDel",
+     "ddtlbzNmSearchFilterAdd",
+     "ddtlbzNmSearchFilterDel",
+     "fileGubun",
+     "fileEncodingType",
+     "fileHeaderStr",
+     "fileDataMapper",
+     "fileNm",
+     "fieldType",
+     "fieldType2",
+     "fieldType3",
+     "fileCellWidth"
+    ]
+   },
+   {
+    "action": "",
+    "method": "GET",
+    "fields": [
+     "fiscalyear",
+     "bsnsyear",
+     "dtlbzId",
+     "dtlbzNm",
+     "ddtlbzId",
+     "excInsttId",
+     "excInsttNm",
+     "hwipnBassId",
+     "dcsnDe",
+     "excclcReprtType"
+    ]
+   },
+   {
+    "action": "",
+    "method": "GET",
+    "fields": [
+     "auditPntoutPblntfAt",
+     "auditReprtPblntfAt",
+     "excclcRpvfrtPblntfAt",
+     "fnlttBlshPblntfAt",
+     "etcNtfcMatterPblntfAt",
+     "impprpPblntfAt"
+    ]
+   }
+  ],
+  "xhrCandidates": [],
+  "onclickSamples": [
+   "f_search()",
+   "f_openJA005101(this)"
+  ],
+  "title": ""
+ },
+ {
+  "name": "bojo-ea-search24",
+  "url": "https://www.bojo.go.kr/ea/getEA001201View.do",
+  "method": "POST",
+  "data": "currentPageNum=1&countPerPageNum=100&fiscalyear=2024&bsnsyear=2024&sortOrder=&searchFilterYn=N",
+  "robots": "robots.txt 허용",
+  "status": 200,
+  "finalUrl": "https://www.bojo.go.kr/ea/getEA001201View.do",
+  "bytes": 73538,
+  "contentType": "text/html; charset=UTF-8",
+  "tables": [
+   {
+    "index": 1,
+    "score": 3,
+    "header": [
+     "공시일",
+     "보조사업자가 공시자료를 등록한 공시일자 지정"
+    ],
+    "rows": 2,
+    "caption": "보조사업자공시 목록 추가 조회 조건 - 보조사업자구분, 공시일, 수행기관명, 보조사업명으로 구성"
+   },
+   {
+    "index": 0,
+    "score": 1,
+    "header": [
+     "회계연도 * 필수 조회 조건",
+     "연단위로 사업 귀속 회계연도 지정"
+    ],
+    "rows": 4,
+    "caption": "보조사업자공시 목록 기본 조회 조건 - 회계연도, 사업연도, 공시근거, 중앙관서, 지방자치단체로 구성"
+   }
+  ],
+  "forms": [
+   {
+    "action": "",
+    "method": "POST",
+    "fields": [
+     "currentPageNum",
+     "countPerPageNum",
+     "fiscalyear",
+     "bsnsyear",
+     "jrsdCode",
+     "excInsttNm",
+     "ddtlbzNm",
+     "dcsnBeginDe",
+     "dcsnEndDe",
+     "ifpbntSysSeCode",
+     "sortOrder",
+     "searchFilterYn",
+     "excInsttNmSearchFilterAdd",
+     "excInsttNmSearchFilterDel",
+     "ddtlbzNmSearchFilterAdd",
+     "ddtlbzNmSearchFilterDel",
+     "fileGubun",
+     "fileEncodingType",
+     "fileHeaderStr",
+     "fileDataMapper",
+     "fileNm",
+     "fieldType",
+     "fieldType2",
+     "fieldType3",
+     "fileCellWidth"
+    ]
+   },
+   {
+    "action": "",
+    "method": "GET",
+    "fields": [
+     "fiscalyear",
+     "bsnsyear",
+     "dtlbzId",
+     "dtlbzNm",
+     "ddtlbzId",
+     "excInsttId",
+     "excInsttNm",
+     "hwipnBassId",
+     "dcsnDe",
+     "excclcReprtType"
+    ]
+   },
+   {
+    "action": "",
+    "method": "GET",
+    "fields": [
+     "auditPntoutPblntfAt",
+     "auditReprtPblntfAt",
+     "excclcRpvfrtPblntfAt",
+     "fnlttBlshPblntfAt",
+     "etcNtfcMatterPblntfAt",
+     "impprpPblntfAt"
+    ]
+   }
+  ],
+  "xhrCandidates": [],
+  "onclickSamples": [
+   "f_search()",
+   "f_openJA005101(this)"
+  ],
+  "title": ""
+ },
+ {
+  "name": "bojo-ea-search23",
+  "url": "https://www.bojo.go.kr/ea/getEA001201View.do",
+  "method": "POST",
+  "data": "currentPageNum=1&countPerPageNum=100&fiscalyear=2023&bsnsyear=2023&sortOrder=&searchFilterYn=N",
+  "robots": "robots.txt 허용",
+  "status": 200,
+  "finalUrl": "https://www.bojo.go.kr/ea/getEA001201View.do",
+  "bytes": 73538,
+  "contentType": "text/html; charset=UTF-8",
+  "tables": [
+   {
+    "index": 1,
+    "score": 3,
+    "header": [
+     "공시일",
+     "보조사업자가 공시자료를 등록한 공시일자 지정"
+    ],
+    "rows": 2,
+    "caption": "보조사업자공시 목록 추가 조회 조건 - 보조사업자구분, 공시일, 수행기관명, 보조사업명으로 구성"
+   },
+   {
+    "index": 0,
+    "score": 1,
+    "header": [
+     "회계연도 * 필수 조회 조건",
+     "연단위로 사업 귀속 회계연도 지정"
+    ],
+    "rows": 4,
+    "caption": "보조사업자공시 목록 기본 조회 조건 - 회계연도, 사업연도, 공시근거, 중앙관서, 지방자치단체로 구성"
+   }
+  ],
+  "forms": [
+   {
+    "action": "",
+    "method": "POST",
+    "fields": [
+     "currentPageNum",
+     "countPerPageNum",
+     "fiscalyear",
+     "bsnsyear",
+     "jrsdCode",
+     "excInsttNm",
+     "ddtlbzNm",
+     "dcsnBeginDe",
+     "dcsnEndDe",
+     "ifpbntSysSeCode",
+     "sortOrder",
+     "searchFilterYn",
+     "excInsttNmSearchFilterAdd",
+     "excInsttNmSearchFilterDel",
+     "ddtlbzNmSearchFilterAdd",
+     "ddtlbzNmSearchFilterDel",
+     "fileGubun",
+     "fileEncodingType",
+     "fileHeaderStr",
+     "fileDataMapper",
+     "fileNm",
+     "fieldType",
+     "fieldType2",
+     "fieldType3",
+     "fileCellWidth"
+    ]
+   },
+   {
+    "action": "",
+    "method": "GET",
+    "fields": [
+     "fiscalyear",
+     "bsnsyear",
+     "dtlbzId",
+     "dtlbzNm",
+     "ddtlbzId",
+     "excInsttId",
+     "excInsttNm",
+     "hwipnBassId",
+     "dcsnDe",
+     "excclcReprtType"
+    ]
+   },
+   {
+    "action": "",
+    "method": "GET",
+    "fields": [
+     "auditPntoutPblntfAt",
+     "auditReprtPblntfAt",
+     "excclcRpvfrtPblntfAt",
+     "fnlttBlshPblntfAt",
+     "etcNtfcMatterPblntfAt",
+     "impprpPblntfAt"
+    ]
+   }
+  ],
+  "xhrCandidates": [],
+  "onclickSamples": [
+   "f_search()",
+   "f_openJA005101(this)"
+  ],
+  "title": ""
+ },
+ {
+  "name": "bojo-opn-biz",
+  "url": "https://bojo.go.kr/opn/im/im002/getIM002001QView.do",
+  "method": "GET",
+  "data": null,
+  "robots": "robots.txt 없음/조회 실패 — 허용으로 간주",
+  "status": 200,
+  "finalUrl": "https://bojo.go.kr/opn/im/im002/getIM002001QView.do",
+  "bytes": 163149,
+  "contentType": "text/html; charset=UTF-8",
+  "tables": [],
+  "forms": [
+   {
+    "action": "",
+    "method": "POST",
+    "fields": [
+     "startCount",
+     "sort",
+     "collection",
+     "range",
+     "startDate",
+     "endDate",
+     "searchField",
+     "reQuery",
+     "realQuery",
+     "sido",
+     "sigungu",
+     "CYEAR",
+     "AA001000nttId",
+     "AA001000sjCn",
+     "AA001000siteId",
+     "AA001000noticeSeCode",
+     "_csrf",
+     "query"
+    ]
+   },
+   {
+    "action": "",
+    "method": "POST",
+    "fields": [
+     "jsonData"
+    ]
+   },
+   {
+    "action": "",
+    "method": "POST",
+    "fields": []
+   }
+  ],
+  "xhrCandidates": [
+   "/bojo.do",
+   "/ja/getJA009000Popup.do",
+   "/ka/getKA003100View.do",
+   "/retrieveSearchWise.do",
+   "/zz/actionPrint.do",
+   "/zz/logout.do",
+   "/zz/reLogin.do",
+   "/zz/registWebLog.do",
+   "/zz/searchTopView.do"
+  ],
+  "onclickSamples": [
+   "javascript:sims.comm.setFocusObj($('.swiperNoticeBt'));fn_notice_popup('N_00302549');",
+   "javascript:sims.comm.setFocusObj(this);f_mailPopup('mailInsert')",
+   "javascript:removeAllMyKeyword();",
+   "pageInit_main('USRM_10021','/ga/retrieveReport.do','1',2,'참여와 소통','부정수급 제보');$('body, html').animate({scrollTop : 0}, 200);",
+   "javascript:sims.comm.setFocusObj(this);fn_notice_popup_msg('N_00302549')"
+  ],
+  "title": "홈 | 보조금통합포털"
+ },
+ {
+  "name": "bojo-opn-exec",
+  "url": "https://bojo.go.kr/opn/ig/ig002/getIG002002QView.do",
+  "method": "GET",
+  "data": null,
+  "robots": "robots.txt 없음/조회 실패 — 허용으로 간주",
+  "status": 200,
+  "finalUrl": "https://bojo.go.kr/opn/ig/ig002/getIG002002QView.do",
+  "bytes": 163123,
+  "contentType": "text/html; charset=UTF-8",
+  "tables": [],
+  "forms": [
+   {
+    "action": "",
+    "method": "POST",
+    "fields": [
+     "startCount",
+     "sort",
+     "collection",
+     "range",
+     "startDate",
+     "endDate",
+     "searchField",
+     "reQuery",
+     "realQuery",
+     "sido",
+     "sigungu",
+     "CYEAR",
+     "AA001000nttId",
+     "AA001000sjCn",
+     "AA001000siteId",
+     "AA001000noticeSeCode",
+     "_csrf",
+     "query"
+    ]
+   },
+   {
+    "action": "",
+    "method": "POST",
+    "fields": [
+     "jsonData"
+    ]
+   },
+   {
+    "action": "",
+    "method": "POST",
+    "fields": []
+   }
+  ],
+  "xhrCandidates": [
+   "/bojo.do",
+   "/ja/getJA009000Popup.do",
+   "/ka/getKA003100View.do",
+   "/retrieveSearchWise.do",
+   "/zz/actionPrint.do",
+   "/zz/logout.do",
+   "/zz/reLogin.do",
+   "/zz/registWebLog.do",
+   "/zz/searchTopView.do"
+  ],
+  "onclickSamples": [
+   "javascript:sims.comm.setFocusObj($('.swiperNoticeBt'));fn_notice_popup('N_00302549');",
+   "javascript:sims.comm.setFocusObj(this);f_mailPopup('mailInsert')",
+   "javascript:removeAllMyKeyword();",
+   "pageInit_main('USRM_10021','/ga/retrieveReport.do','1',2,'참여와 소통','부정수급 제보');$('body, html').animate({scrollTop : 0}, 200);",
+   "javascript:sims.comm.setFocusObj(this);fn_notice_popup_msg('N_00302549')"
+  ],
+  "title": "홈 | 보조금통합포털"
+ },
+ {
+  "name": "gosims-opn",
+  "url": "https://opn.gosims.go.kr/opn/iz/iz000/getIZ000002QView.do",
+  "method": "GET",
+  "data": null,
+  "robots": "robots.txt 없음/조회 실패 — 허용으로 간주",
+  "status": 200,
+  "finalUrl": "https://opn.gosims.go.kr/opn/iz/iz000/getIZ000002QView.do",
+  "bytes": 8186,
+  "contentType": "text/html; charset=UTF-8",
+  "tables": [],
+  "forms": [
+   {
+    "action": "",
+    "method": "GET",
+    "fields": [
+     "bsnsyear",
+     "jrsdNm"
+    ]
+   },
+   {
+    "action": "",
+    "method": "GET",
+    "fields": []
+   }
+  ],
+  "xhrCandidates": [],
+  "onclickSamples": [
+   "f_retrieveIZ000002Q();",
+   "window.close();"
+  ],
+  "title": "국고보조금 통합관리시스템"
+ }
+]

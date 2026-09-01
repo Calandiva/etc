@@ -1,0 +1,196 @@
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta http-equiv="content-Type" content="text/html; charset=utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    
+    <title>국고보조금 통합관리시스템</title>
+    
+
+
+<!--[if lt IE 9]><script src="/opn/js/lib/html5shiv.js ;JSESSIONID_OPN=cfVa6rzzYiYmlSuspL03Pu0jSDzFAps0YmhDFOC1eNTkQzc6becZ!-1363220572"></script><![endif]-->
+
+<link rel="shortcut icon" type="image/x-icon" href="/opn/images/favicon.ico;JSESSIONID_OPN=cfVa6rzzYiYmlSuspL03Pu0jSDzFAps0YmhDFOC1eNTkQzc6becZ!-1363220572">
+<link href="/opn/js/lib/kr/co/softbowl/css/Sbgrid_default.css;JSESSIONID_OPN=cfVa6rzzYiYmlSuspL03Pu0jSDzFAps0YmhDFOC1eNTkQzc6becZ!-1363220572" rel="stylesheet" type="text/css">
+<link href="/opn/css/import.css;JSESSIONID_OPN=cfVa6rzzYiYmlSuspL03Pu0jSDzFAps0YmhDFOC1eNTkQzc6becZ!-1363220572" rel="stylesheet" type="text/css">
+<link href="/opn/css/popup.css;JSESSIONID_OPN=cfVa6rzzYiYmlSuspL03Pu0jSDzFAps0YmhDFOC1eNTkQzc6becZ!-1363220572" rel="stylesheet" type="text/css">
+
+<script src="/opn/js/lib/jquery-1.12.1.js;JSESSIONID_OPN=cfVa6rzzYiYmlSuspL03Pu0jSDzFAps0YmhDFOC1eNTkQzc6becZ!-1363220572" type="text/javascript"></script>
+<script src="/opn/js/lib/jquery.form.js;JSESSIONID_OPN=cfVa6rzzYiYmlSuspL03Pu0jSDzFAps0YmhDFOC1eNTkQzc6becZ!-1363220572" type="text/javascript"></script>
+<script src="/opn/js/lib/jquery-ui.min.js;JSESSIONID_OPN=cfVa6rzzYiYmlSuspL03Pu0jSDzFAps0YmhDFOC1eNTkQzc6becZ!-1363220572" type="text/javascript"></script>
+<script src="/opn/js/lib/jquery.flexslider-min.js;JSESSIONID_OPN=cfVa6rzzYiYmlSuspL03Pu0jSDzFAps0YmhDFOC1eNTkQzc6becZ!-1363220572" type="text/javascript"></script>
+
+
+<script src="/opn/js/lib/kr/co/softbowl/js/Library/json-minified.js;JSESSIONID_OPN=cfVa6rzzYiYmlSuspL03Pu0jSDzFAps0YmhDFOC1eNTkQzc6becZ!-1363220572" type="text/javascript"></script>
+<script src="/opn/js/lib/kr/co/softbowl/js/Library/json2.js;JSESSIONID_OPN=cfVa6rzzYiYmlSuspL03Pu0jSDzFAps0YmhDFOC1eNTkQzc6becZ!-1363220572" type="text/javascript" charset="utf-8"></script>
+<script src="/opn/js/lib/kr/co/softbowl/SBGrid.js;JSESSIONID_OPN=cfVa6rzzYiYmlSuspL03Pu0jSDzFAps0YmhDFOC1eNTkQzc6becZ!-1363220572" type="text/javascript"></script>
+
+<script src="/opn/js/frm/frm.js;JSESSIONID_OPN=cfVa6rzzYiYmlSuspL03Pu0jSDzFAps0YmhDFOC1eNTkQzc6becZ!-1363220572" type="text/javascript"></script>
+<script src="/opn/js/frm/form2Object.js;JSESSIONID_OPN=cfVa6rzzYiYmlSuspL03Pu0jSDzFAps0YmhDFOC1eNTkQzc6becZ!-1363220572" type="text/javascript"></script>
+
+<script src="/opn/com/validate.val;JSESSIONID_OPN=cfVa6rzzYiYmlSuspL03Pu0jSDzFAps0YmhDFOC1eNTkQzc6becZ!-1363220572" type="text/javascript"></script>
+
+<script src="/opn/js/lib/placeholders.js;JSESSIONID_OPN=cfVa6rzzYiYmlSuspL03Pu0jSDzFAps0YmhDFOC1eNTkQzc6becZ!-1363220572" type="text/javascript" charset="utf-8"></script>
+<script src="/opn/js/lib/common.js;JSESSIONID_OPN=cfVa6rzzYiYmlSuspL03Pu0jSDzFAps0YmhDFOC1eNTkQzc6becZ!-1363220572" type="text/javascript"></script>
+<script src="/opn/js/lib/sbgrid_customize.js;JSESSIONID_OPN=cfVa6rzzYiYmlSuspL03Pu0jSDzFAps0YmhDFOC1eNTkQzc6becZ!-1363220572" type="text/javascript" charset="utf-8"></script>
+<script src="/opn/js/opn/commonOPN.js;JSESSIONID_OPN=cfVa6rzzYiYmlSuspL03Pu0jSDzFAps0YmhDFOC1eNTkQzc6becZ!-1363220572" type="text/javascript"></script>
+<script src="/opn/js/cmm/commonCMM.js;JSESSIONID_OPN=cfVa6rzzYiYmlSuspL03Pu0jSDzFAps0YmhDFOC1eNTkQzc6becZ!-1363220572" type="text/javascript"></script>
+<script src="/opn/js/opn/messageOPN.js;JSESSIONID_OPN=cfVa6rzzYiYmlSuspL03Pu0jSDzFAps0YmhDFOC1eNTkQzc6becZ!-1363220572" type="text/javascript"></script>
+<script src="/opn/js/cmm/messageCMM.js;JSESSIONID_OPN=cfVa6rzzYiYmlSuspL03Pu0jSDzFAps0YmhDFOC1eNTkQzc6becZ!-1363220572" type="text/javascript"></script>
+<script src="/opn/js/cmm/accessibility.js;JSESSIONID_OPN=cfVa6rzzYiYmlSuspL03Pu0jSDzFAps0YmhDFOC1eNTkQzc6becZ!-1363220572" type="text/javascript"></script><!-- 접근성개선 -->
+
+<script type="text/javascript">
+    SBGrid.DEF.DOMAIN = "/opn/js/lib/";
+</script>
+
+
+    
+
+
+
+<script type="text/javascript">
+    CONTEXT_PATH     = "/opn";
+    CURR_YYYYMMDD    = "20260901";
+    REPORT_URL       = 'https://clip.gosims.go.kr/ClipReport4/common_report.jsp';
+
+    SVR_PATH_PTL     = 'https://www.gosims.go.kr';
+    SVR_PATH_CMM     = 'https://cmm.gosims.go.kr/cmm';
+    SVR_PATH_DSU     = 'https://dsu.gosims.go.kr/dsu';
+    SVR_PATH_EXE     = 'https://gvs.gosims.go.kr/exe';
+    SVR_PATH_PJT     = 'https://gvs.gosims.go.kr/pjt';
+    SVR_PATH_TSK     = 'https://gvs.gosims.go.kr/tsk';
+    SVR_PATH_STT     = '/stt';
+    SVR_PATH_ADJ     = '/adj';
+    SVR_PATH_OPN     = 'https://opn.gosims.go.kr/opn';
+    SVR_PATH_DLK     = '/dlk';
+    SVR_PATH_SWP     = 'https://swp.gosims.go.kr/swp';
+    SVR_PATH_STA     = '/sta';
+
+    SVR_PATH_SSL_PTL = 'https://www.gosims.go.kr';
+    SVR_PATH_SSL_CMM = 'https://cmm.gosims.go.kr/cmm';
+    SVR_PATH_SSL_DSU = 'https://dsu.gosims.go.kr/dsu';
+    SVR_PATH_SSL_EXE = 'https://gvs.gosims.go.kr/exe';
+    SVR_PATH_SSL_PJT = 'https://gvs.gosims.go.kr/pjt';
+    SVR_PATH_SSL_TSK = 'https://gvs.gosims.go.kr/tsk';
+    SVR_PATH_SSL_STT = '/stt';
+    SVR_PATH_SSL_ADJ = '/adj';
+    SVR_PATH_SSL_OPN = 'https://opn.gosims.go.kr/opn';
+    SVR_PATH_SSL_DLK = '/dlk';
+    SVR_PATH_SSL_SWP = 'https://swp.gosims.go.kr/swp';
+    SVR_PATH_SSL_STA = '/sta';
+
+    SVR_PATH_SSO     = 'https://sso.gosims.go.kr/idp/sso';
+    SVR_PATH_SSL_SSO = 'https://sso.gosims.go.kr/idp/sso';
+
+    MAX_UPLOAD_SIZE = '50000000';
+
+    document.domain  = 'gosims.go.kr';
+</script>
+
+<!-- 사용자 세션 강제 기능 추가(2017.04.19. iwlee) -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script type="text/javascript">
+
+</script>
+<!-- 중복 로그인 방지 기능 추가(2021.02.22. JTO) -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</head>
+<body class="popup">
+    
+
+
+
+
+
+
+
+
+
+<script src="/opn/js/opn/iz/iz000/IZ000002Q.js"  type="text/javascript"></script>
+<script src="/opn/js/opn/commonOPN.js"           type="text/javascript"></script><!-- 보조사업 공통js   -->
+    <header class="common">
+        <h1>중앙관서검색</h1>
+    </header>
+	<section class="contents">
+        <!-- 조회조건 시작 -->
+        <form id="IZ000002QFrmSrch" name="IZ000002QFrmSrch" onsubmit="return false;">
+            <section class="condition">
+                <div class="wrap">
+                    <table>
+                        <colgroup>
+                            <col style="width:80px">
+                            <col style="width:70px">
+                            <col style="width:150px">
+                            <col>
+                        </colgroup>
+                        <tbody>
+                            <tr>
+                                <th scope="row">사업연도</th>
+                                <td><input type="hidden" name="bsnsyear" value="" /></td>
+                                <th scope="row">소관코드 또는 소관명</th>
+                                <td><input type="text" class="full" name="jrsdNm" value="" 
+                                           onkeypress="return f_opn_cmm_handleEnter(event,'f_retrieveIZ000002Q()',this);"
+                                           title="소관코드 또는 소관명"
+                                   />
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <button type="button" class="search" onClick="f_retrieveIZ000002Q();">검색</button>
+                </div>
+             </section>
+        </form>
+        <!-- 조회조건 끝 -->
+		<h2 class="article"> 검색결과
+			<span class="sub"></span>
+		</h2>
+        <form id="IZ000002QFrm" name="IZ000002QFrm">
+            <article>
+                <!-- <header class="function">
+                    <button type="button" class="xls" onClick="f_opn_sbgridExcelDwld(IZ000002QGridObj,'중앙관서목록');">엑셀</button>
+                </header> -->
+                <!-- 그리드생성 시작 -->
+                <div class="gridWrap" id="IZ000002Q_mainDiv"></div>
+                <!-- 그리드생성 끝 -->
+            </article>
+        </form>
+    </section>
+    <footer class="common">
+        <button type="button" class="close" onClick="window.close();">닫기</button>
+    </footer>
+</body>
+</html>
+
