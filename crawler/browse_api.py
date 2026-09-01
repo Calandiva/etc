@@ -89,9 +89,31 @@ def run(mode="api"):
         br=pw.chromium.launch(args=["--no-sandbox"])
         ctx=br.new_context(user_agent=os.environ.get("CRAWL_UA","SubsidyDisclosureResearch/1.0 (public data)"),locale="ko-KR")
         page=ctx.new_page(); page.set_default_timeout(45000)
+        caught=[]
+        def on_resp(resp):
+            try:
+                u=resp.url
+                if ".do" in u and resp.request.method in ("GET","POST"):
+                    ct=resp.headers.get("content-type","")
+                    if "json" in ct or "text" in ct:
+                        b=resp.text()
+                        if any(x in b for x in ["jrsd","Jrsd","중앙관서","관서","lcgv","Lcgv","지자체","시도","코드","Code"]) and len(b)<200000:
+                            caught.append({"url":u[:120],"len":len(b),"body":b[:8000]})
+            except Exception: pass
+        page.on("response", on_resp)
         for a in range(5):
-            try: page.goto(LIST_PAGE,wait_until="domcontentloaded",timeout=60000); page.wait_for_timeout(3000); break
+            try: page.goto(LIST_PAGE,wait_until="domcontentloaded",timeout=60000); page.wait_for_timeout(4000); break
             except Exception as e: print("goto 재시도",a+1,e); page.wait_for_timeout(3000)
+        # 국고 라디오/구분 선택을 시도해 관서 콤보 로드 유발
+        try:
+            page.evaluate("""()=>{
+              document.querySelectorAll('input[type=radio]').forEach(r=>{if(/001|국고/.test(r.value+r.name)){r.checked=true;r.dispatchEvent(new Event('click',{bubbles:true}));r.dispatchEvent(new Event('change',{bubbles:true}));}});
+              const s=document.querySelector('#EA001201Frm_basisCode,select[id$=_basisCode]');if(s){s.value='1';s.dispatchEvent(new Event('change',{bubbles:true}));}
+            }""")
+            page.wait_for_timeout(4000)
+        except Exception: pass
+        (RB/"combo-responses.json").write_text(json.dumps(caught,ensure_ascii=False,indent=1)[:400000],encoding="utf-8")
+        print("콤보 후보 응답",len(caught),"건")
 
         def collect_window(year, basis, beg, end):
             """[beg,end] 창을 수집. 범위 초과면 반으로 분할 재귀."""
