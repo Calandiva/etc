@@ -164,43 +164,40 @@ def run(mode="api"):
         (RB/"code-elements.json").write_text(json.dumps(rel,ensure_ascii=False,indent=1),encoding="utf-8")
         print("select",len(selects),"개, 코드요소",len(rel),"개 덤프")
 
-        # ★★ 페이지의 실제 데이터 함수를 직접 호출 → 정답 serialize 문자열 + 응답 캡처
-        truth={"serialize":[], "resps":[]}
-        def cap_req(req):
-            if "retrieveInfoPblntfTrgetMngList" in req.url and req.post_data:
-                truth["serialize"].append(req.post_data)
-        def cap_resp(resp):
-            if "retrieveInfoPblntfTrgetMngList" in resp.url:
-                try: truth["resps"].append({"status":resp.status,"body":resp.text()[:8000]})
-                except Exception as e: truth["resps"].append({"err":str(e)})
-        page.on("request", cap_req); page.on("response", cap_resp)
-        try:
-            ser=page.evaluate("""(a)=>{
-              const [y, basis] = a;
-              const setv=(sel,v)=>{const el=document.querySelector(sel); if(el){el.value=v;}};
-              setv('#EA001201Frm_fsyr', String(y)); setv('#EA001201Frm_bsnsyear', String(y));
-              setv('#EA001201Frm_basisCode', basis);
-              setv('#EA001201Frm_dcsnBeginDe',''); setv('#EA001201Frm_dcsnEndDe','');
-              setv('#EA001201FrmSrch_currentPageNum','1');
-              try{ window.ea001201_countPerPageNum = 100; }catch(e){}
-              // 누락된 유틸 스텁(이 페이지에 미로드) — 검증 통과시켜 serialize+POST 진행
-              if(typeof cf_opn_validChkDate==='undefined'){ window.cf_opn_validChkDate=function(){return true;}; }
-              if(typeof f_toDateFormat2==='undefined'){ window.f_toDateFormat2=function(x){return x||'';}; }
-              if(typeof CMMFN==='undefined'){ window.CMMFN={useAjaxLoadingMask:false,messagePopup:function(){return {then:function(f){return;}};}}; }
-              if(typeof cf_callback==='undefined'){ window.cf_callback=function(){}; }
-              if(typeof fn_registWebLog==='undefined'){ window.fn_registWebLog=function(){}; }
-              if(typeof f_searchRetrieveInfoPblntfTrgetMngList==='function'){
-                 try{ f_searchRetrieveInfoPblntfTrgetMngList(); }catch(e){ return 'callerr:'+e; }
-              }
-              // 동시에 serialize 문자열도 반환(필드 복사 후 상태)
-              try{ return (window.$ ? $('#EA001201FrmSrch').serialize() : ''); }catch(e){ return 'serr:'+e; }
-            }""", [years[0], "2"])
-            truth["serializeReturn"]=ser
-            page.wait_for_timeout(5000)
-        except Exception as e:
-            truth["error"]=str(e)
+        # ★★ 정답 serialize를 만들고(필드 직접 복사) 그 본문으로 즉시 fetch → 응답 확인
+        truth=page.evaluate("""async (a)=>{
+          const [y, basis] = a;
+          const jq = window.jQuery || window.$;
+          if(!jq) return {err:'no jQuery'};
+          const setById=(id,v)=>{const el=document.getElementById(id); if(el){el.value=v;}};
+          // 검색조건: 방문자가 하는 것과 동일하게 회계연도/근거만 세팅
+          setById('EA001201FrmSrch_fsyr', String(y));
+          setById('EA001201FrmSrch_bsnsyear', String(y));
+          setById('EA001201FrmSrch_basisCode', basis);
+          setById('EA001201FrmSrch_currentPageNum', '1');
+          setById('EA001201FrmSrch_nPageSize', '100');
+          setById('EA001201FrmSrch_jrsdCode','');
+          setById('EA001201FrmSrch_wdrLcgvCode','');
+          setById('EA001201FrmSrch_dcsnBeginDe','');
+          setById('EA001201FrmSrch_dcsnEndDe','');
+          setById('EA001201FrmSrch_sortOrder','');
+          const body = jq('#EA001201FrmSrch').serialize();
+          let out={serialize: body};
+          try{
+            const r = await fetch('/ea/retrieveInfoPblntfTrgetMngList.do', {method:'POST', credentials:'include',
+              headers:{'Content-Type':'application/x-www-form-urlencoded; charset=UTF-8','X-Requested-With':'XMLHttpRequest'}, body});
+            out.status = r.status;
+            const t = await r.text();
+            try{ out.json = JSON.parse(t); }catch(e){ out.text = t.slice(0,600); }
+          }catch(e){ out.fetchError = String(e); }
+          return out;
+        }""", [years[0], "2"])
         (RB/"truth.json").write_text(json.dumps(truth,ensure_ascii=False,indent=1)[:200000],encoding="utf-8")
-        print("정답 요청",len(truth["serialize"]),"응답",len(truth["resps"]),"serialize:",str(truth.get("serializeReturn"))[:120])
+        js=truth.get("json") if isinstance(truth,dict) else None
+        err0=js.get("ERROR-0000") if isinstance(js,dict) else None
+        items=find_list(js) if js else None
+        print("정답 serialize:",str(truth.get("serialize"))[:200])
+        print("status",truth.get("status"),"ERROR-0000:",err0,"items:",(len(items) if items else 0))
 
         def collect_window(year, basis, beg, end):
             """[beg,end] 창을 수집. 범위 초과면 반으로 분할 재귀."""
