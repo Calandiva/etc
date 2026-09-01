@@ -155,9 +155,45 @@ def run(mode="api"):
                 all_rows.extend(to_rows(items,year,basis,m)); pageno+=1
             print(f"{year} basis{basis} [{beg}-{end}]: 누적 {len(all_rows)}행 (q{qcount[0]})")
 
-        # 1) 지방: 표준 시도코드가 wdrLcgvCode로 통하는지 검증하며 수집
+        # 1) 보조사업자구분(ifpbntSysSeCode) 부분집합으로 좁혀 조회 — 관서 코드 불필요
         probe=[]
+        SYS=[("002","사회복지시설"),("003","보육시설"),("004","창업진흥원"),("001","일반")]
+        def q(y,basis,sysse,lcgv):
+            return dict(currentPageNum="1",countPerPageNum=str(per),fiscalyear=str(y),bsnsyear=str(y),
+                jrsdCode="",excInsttNm="",ddtlbzNm="",dcsnBeginDe="",dcsnEndDe="",
+                ifpbntSysSeCode=sysse,sortOrder="",searchFilterYn="N",basisCode=basis,
+                wdrLcgvCode=lcgv,labSfrndCode="",selectedMultiText="",selectedMultiType="",selectedMultiSysSeCode=sysse)
+        plans2=[]
         for y in years:
+            for sc,snm in SYS:
+                plans2.append((y,"1",sc,"",f"국고/{snm}"))
+                for lc,lnm in SIDO:
+                    plans2.append((y,"2",sc,lc,f"지방/{snm}/{lnm}"))
+        for (y,basis,sysse,lcgv,label) in plans2:
+            if qcount[0]>=max_queries: break
+            qcount[0]+=1
+            r=call(page,q(y,basis,sysse,lcgv))
+            js=r.get("json") if isinstance(r,dict) else None
+            err=js.get("ERROR-0000") if isinstance(js,dict) else None
+            items=find_list(js) if js else None
+            probe.append({"label":label,"y":y,"err":err,"items":(len(items) if items else 0)})
+            if items:
+                m,keys=map_items(items)
+                if not any(x.get("mappedTo") for x in dbg): dbg.append({"label":label,"itemKeys":keys[:30],"mappedTo":m})
+                all_rows.extend(to_rows(items,y,basis,m))
+                pageno=2
+                while len(items)>=per and pageno<=max_pages and qcount[0]<max_queries:
+                    qcount[0]+=1; time.sleep(delay)
+                    r2=call(page,{**q(y,basis,sysse,lcgv),"currentPageNum":str(pageno)})
+                    items=find_list(r2.get("json")) if isinstance(r2,dict) else None
+                    if not items: break
+                    all_rows.extend(to_rows(items,y,basis,m)); pageno+=1
+                print(f"{label} {y}: 누적 {len(all_rows)}행")
+            time.sleep(delay)
+        (RB/"sys-probe.json").write_text(json.dumps(probe,ensure_ascii=False,indent=1),encoding="utf-8")
+        br.close()
+        _oldprobe=[]
+        for y in []:
             beg,end=daterange_windows(y)
             for code,nm in SIDO:
                 if qcount[0]>=max_queries: break
