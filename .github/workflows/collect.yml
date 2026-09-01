@@ -9,6 +9,10 @@ on:
         default: "recon"
         type: choice
         options: [openapi, browser-api, api-probe, recon, browser-recon, collect, browser-collect, download]
+      apikey:
+        description: "data.go.kr 서비스키(openapi 모드용, 미입력 시 Secret 사용). 실행 후 키 재발급 권장"
+        required: false
+        default: ""
   schedule:
     - cron: "0 21 * * 1"   # 매주 화요일 06:00 KST — 공시 갱신 반영
 
@@ -35,7 +39,7 @@ jobs:
         continue-on-error: true
         env:
           MODE: ${{ github.event.inputs.mode || 'browser-collect' }}
-          DATA_GO_KR_KEY: ${{ secrets.DATA_GO_KR_KEY }}
+          DATA_GO_KR_KEY: ${{ github.event.inputs.apikey || secrets.DATA_GO_KR_KEY }}
         run: |
           case "$MODE" in
             recon)          python crawler/collect.py recon ;;
