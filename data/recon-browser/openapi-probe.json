@@ -1,0 +1,30 @@
+[
+ {
+  "variant": {
+   "resultType": "json"
+  },
+  "error": "<urlopen error timed out>"
+ },
+ {
+  "variant": {
+   "type": "json"
+  },
+  "error": "<urlopen error timed out>"
+ },
+ {
+  "variant": {
+   "dataType": "json"
+  },
+  "error": "<urlopen error timed out>"
+ },
+ {
+  "variant": {
+   "_type": "json"
+  },
+  "error": "<urlopen error timed out>"
+ },
+ {
+  "variant": {},
+  "error": "<urlopen error timed out>"
+ }
+]

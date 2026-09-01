@@ -2,9 +2,6 @@
  {
   "ep": "https://apis.data.go.kr/1051000/MoefOpenAPI/T_OPD_PRMSCT_SBBGST",
   "page": 1,
-  "note": "항목 없음",
-  "keys": [
-   "OpenAPI_ServiceResponse"
-  ]
+  "error": "<urlopen error timed out>"
  }
 ]
