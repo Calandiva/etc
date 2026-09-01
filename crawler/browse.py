@@ -79,25 +79,39 @@ def pick_data_table(tables):
     return best  # (table, header_idx, map) or None
 
 def do_search(page, year):
-    """연도 조회 시도 — select/input 채우고 조회 버튼 클릭."""
-    js=f"""(y) => {{
-      for (const sel of document.querySelectorAll('select')) {{
-        for (const o of sel.options) if (o.value==String(y)||o.text.includes(String(y))) {{ sel.value=o.value; sel.dispatchEvent(new Event('change',{{bubbles:true}})); }}
-      }}
-      for (const nm of ['fiscalyear','bsnsyear']) {{
-        const el=document.querySelector(`[name="${{nm}}"]`); if (el) {{ el.value=String(y); el.dispatchEvent(new Event('change',{{bubbles:true}})); }}
-      }}
-    }}"""
-    page.evaluate(js, year)
-    for label in ["조회","검색"]:
-        try:
-            btn=page.get_by_role("button", name=re.compile(label))
-            if btn.count(): btn.first.click(timeout=4000); break
-        except Exception: pass
-    else:
+    """연도(회계연도=fsyr, 사업연도=bsnsyear) 지정 후 조회, 결과 컨테이너가 채워질 때까지 대기."""
+    page.evaluate("""(y) => {
+      const setSel=(el)=>{ if(!el) return;
+        for (const o of el.options) if (o.value==String(y)||o.text.includes(String(y))) { el.value=o.value; }
+        el.dispatchEvent(new Event('change',{bubbles:true})); };
+      // id 또는 name에 연도 필드가 들어간 select/input 모두 설정
+      document.querySelectorAll('select,input').forEach(el=>{
+        const key=(el.id||'')+' '+(el.name||'');
+        if (/fsyr|fiscalyear|bsnsyear|회계연도|사업연도/i.test(key)) {
+          if (el.tagName==='SELECT') setSel(el);
+          else { el.value=String(y); el.dispatchEvent(new Event('change',{bubbles:true})); }
+        }
+      });
+    }""", year)
+    # 조회 버튼 클릭(여러 개면 마지막-보이는 것), 실패 시 f_search()
+    clicked=False
+    try:
+        btns=page.get_by_role("button", name=re.compile("조회"))
+        for i in range(btns.count()):
+            b=btns.nth(i)
+            if b.is_visible():
+                b.click(timeout=4000); clicked=True; break
+    except Exception: pass
+    if not clicked:
         try: page.evaluate("() => { if (typeof f_search==='function') f_search(); }")
         except Exception: pass
-    page.wait_for_timeout(2500)
+    # 결과 컨테이너(#tableWrap)가 채워지길 대기
+    try:
+        page.wait_for_function(
+            "() => { const w=document.querySelector('#tableWrap'); return w && w.innerText.trim().length>20; }",
+            timeout=15000)
+    except Exception:
+        page.wait_for_timeout(2500)
 
 def run(mode):
     from playwright.sync_api import sync_playwright
@@ -125,8 +139,18 @@ def run(mode):
             do_search(page, years[0])
             page.screenshot(path=str(RB/"02-searched.png"), full_page=True)
             (RB/"02-searched.html").write_text(page.content(), encoding="utf-8")
+            # 결과 컨테이너 원문 저장(카드형 결과 구조 확인용)
+            try:
+                tw=page.eval_on_selector("#tableWrap","el=>el.innerHTML")
+                (RB/"03-tableWrap.html").write_text(tw or "", encoding="utf-8")
+            except Exception as e:
+                (RB/"03-tableWrap.html").write_text(f"(#tableWrap 없음: {e})", encoding="utf-8")
+            # 결과 링크(상세 진입) 후보
+            links=page.eval_on_selector_all("#tableWrap a, #tableWrap [onclick], #tableWrap button",
+              "els=>els.slice(0,20).map(e=>({t:e.innerText.trim().slice(0,40),oc:(e.getAttribute('onclick')||'').slice(0,120),href:(e.getAttribute('href')||'').slice(0,80)}))")
             tables=read_tables(page)
             report={"url":list_url,"year":years[0],"tableCount":len(tables),
+                    "resultLinks":links,
                     "tables":[{"caption":t["caption"],"headerGuess":t["rows"][0][:14],
                                "rowCount":len(t["rows"]),
                                "sample":t["rows"][1][:14] if len(t["rows"])>1 else []} for t in tables],
