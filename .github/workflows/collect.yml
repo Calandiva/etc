@@ -8,7 +8,7 @@ on:
         required: true
         default: "recon"
         type: choice
-        options: [recon, collect]
+        options: [recon, browser-recon, collect, browser-collect]
   schedule:
     - cron: "0 21 * * 1"   # 매주 화요일 06:00 KST — 공시 갱신 반영
 
@@ -29,8 +29,18 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt
+      - name: Playwright 브라우저 설치
+        run: python -m playwright install --with-deps chromium
       - name: 수집 실행
-        run: python crawler/collect.py "${{ github.event.inputs.mode || 'collect' }}"
+        env:
+          MODE: ${{ github.event.inputs.mode || 'browser-collect' }}
+        run: |
+          case "$MODE" in
+            recon)          python crawler/collect.py recon ;;
+            collect)        python crawler/collect.py collect ;;
+            browser-recon)  python crawler/browse.py recon ;;
+            *)              python crawler/browse.py collect ;;
+          esac
       - name: 결과 커밋
         run: |
           git config user.name "disclosure-bot"
