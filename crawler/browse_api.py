@@ -183,9 +183,14 @@ def run(mode="api"):
               setv('#EA001201Frm_dcsnBeginDe',''); setv('#EA001201Frm_dcsnEndDe','');
               setv('#EA001201FrmSrch_currentPageNum','1');
               try{ window.ea001201_countPerPageNum = 100; }catch(e){}
-              // 페이지 함수가 있으면 필드복사+POST 실행
+              // 누락된 유틸 스텁(이 페이지에 미로드) — 검증 통과시켜 serialize+POST 진행
+              if(typeof cf_opn_validChkDate==='undefined'){ window.cf_opn_validChkDate=function(){return true;}; }
+              if(typeof f_toDateFormat2==='undefined'){ window.f_toDateFormat2=function(x){return x||'';}; }
+              if(typeof CMMFN==='undefined'){ window.CMMFN={useAjaxLoadingMask:false,messagePopup:function(){return {then:function(f){return;}};}}; }
+              if(typeof cf_callback==='undefined'){ window.cf_callback=function(){}; }
+              if(typeof fn_registWebLog==='undefined'){ window.fn_registWebLog=function(){}; }
               if(typeof f_searchRetrieveInfoPblntfTrgetMngList==='function'){
-                 f_searchRetrieveInfoPblntfTrgetMngList();
+                 try{ f_searchRetrieveInfoPblntfTrgetMngList(); }catch(e){ return 'callerr:'+e; }
               }
               // 동시에 serialize 문자열도 반환(필드 복사 후 상태)
               try{ return (window.$ ? $('#EA001201FrmSrch').serialize() : ''); }catch(e){ return 'serr:'+e; }
