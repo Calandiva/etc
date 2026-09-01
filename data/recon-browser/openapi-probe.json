@@ -1,29 +1,39 @@
 [
  {
+  "ep": "https://apis.data.go.kr/1051000/MoefOpenAPI/T_OPD_PRMSCT_SBBGST",
   "variant": {
    "resultType": "json"
   },
   "error": "<urlopen error timed out>"
  },
  {
+  "ep": "https://apis.data.go.kr/1051000/MoefOpenAPI/T_OPD_PRMSCT_SBBGST",
   "variant": {
    "type": "json"
   },
   "error": "<urlopen error timed out>"
  },
  {
+  "ep": "https://apis.data.go.kr/1051000/MoefOpenAPI/T_OPD_PRMSCT_SBBGST",
+  "variant": {},
+  "error": "<urlopen error timed out>"
+ },
+ {
+  "ep": "http://apis.data.go.kr/1051000/MoefOpenAPI/T_OPD_PRMSCT_SBBGST",
   "variant": {
-   "dataType": "json"
+   "resultType": "json"
   },
   "error": "<urlopen error timed out>"
  },
  {
+  "ep": "http://apis.data.go.kr/1051000/MoefOpenAPI/T_OPD_PRMSCT_SBBGST",
   "variant": {
-   "_type": "json"
+   "type": "json"
   },
   "error": "<urlopen error timed out>"
  },
  {
+  "ep": "http://apis.data.go.kr/1051000/MoefOpenAPI/T_OPD_PRMSCT_SBBGST",
   "variant": {},
   "error": "<urlopen error timed out>"
  }
