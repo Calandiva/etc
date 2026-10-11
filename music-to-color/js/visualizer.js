@@ -1,7 +1,13 @@
-/* cols x rows 격자 렌더러(정사각형 스윕형, 가로세로 다른 음계형 둘 다 지원). 작은 오프스크린
-   캔버스(cols x rows, 칸당 1픽셀)에 ImageData 를 채운 뒤, 화면에 보이는 큰 캔버스로 확대
-   그려서 1,000,000칸까지도 매 프레임 가볍게 갱신한다. */
+/* 시각화 렌더러 — 격자형(음계/주파수)은 작은 오프스크린 캔버스에 ImageData 를 채워 확대
+   그리고, 방사형·사이클·관계형·직선형은 화면 캔버스에 직접 도형을 그린다. 다섯 가지 모두
+   render(levels, bands, minBrightness) 하나로 호출하고, 어떤 모양으로 그릴지는 setLayout()
+   에서 받은 kind 가 정한다. */
 (function (g) {
+  const rgbCss = (c, brightness) =>
+    `rgb(${Math.round(c[0] * brightness)},${Math.round(c[1] * brightness)},${Math.round(c[2] * brightness)})`;
+  const brightnessOf = (level, minBrightness) =>
+    minBrightness + (1 - minBrightness) * Math.sqrt(Math.max(0, Math.min(1, level)));
+
   class Visualizer {
     constructor(canvas, container) {
       this.canvas = canvas;
@@ -9,6 +15,7 @@
       this.ctx = canvas.getContext("2d");
       this.offscreen = document.createElement("canvas");
       this.offCtx = this.offscreen.getContext("2d", { willReadFrequently: false });
+      this.kind = "grid";
       this.cols = 0;
       this.rows = 0;
       this.imageData = null;
@@ -18,12 +25,16 @@
       document.addEventListener("fullscreenchange", () => this.layout());
     }
 
-    setGridDims(cols, rows) {
-      this.cols = cols;
-      this.rows = rows;
-      this.offscreen.width = cols;
-      this.offscreen.height = rows;
-      this.imageData = this.offCtx.createImageData(cols, rows);
+    // layout: { kind: 'grid'|'radial'|'cycle'|'relational'|'linear', cols?, rows? }
+    setLayout({ kind, cols, rows }) {
+      this.kind = kind;
+      if (kind === "grid") {
+        this.cols = cols;
+        this.rows = rows;
+        this.offscreen.width = cols;
+        this.offscreen.height = rows;
+        this.imageData = this.offCtx.createImageData(cols, rows);
+      }
       this.layout();
     }
 
@@ -31,26 +42,38 @@
 
     layout() {
       const dpr = window.devicePixelRatio || 1;
-      const w = this.container.clientWidth;
-      const h = this.container.clientHeight;
-      if (w <= 0 || h <= 0 || !this.cols || !this.rows) return;
-      const aspect = this.cols / this.rows;
-      let cssW = w, cssH = w / aspect;
-      if (cssH > h) { cssH = h; cssW = h * aspect; }
+      const w = this.container.clientWidth, h = this.container.clientHeight;
+      if (w <= 0 || h <= 0) return;
+      let cssW = w, cssH = h;
+      if (this.kind === "grid" && this.cols && this.rows) {
+        const aspect = this.cols / this.rows;
+        cssH = w / aspect;
+        if (cssH > h) { cssH = h; cssW = h * aspect; }
+      } else if (this.kind !== "linear") {
+        const side = Math.min(w, h);
+        cssW = side; cssH = side;
+      }
       this.canvas.style.width = cssW + "px";
       this.canvas.style.height = cssH + "px";
       this.canvas.width = Math.round(cssW * dpr);
       this.canvas.height = Math.round(cssH * dpr);
     }
 
-    // levels: 밴드별 0..1, bands: colorModel.buildLayout() 의 bands(각자 고정 row/col/color 보유)
     render(levels, bands, minBrightness) {
-      if (!this.cols || !this.rows || !bands || !bands.length) return;
+      if (!bands || !bands.length) return;
+      if (this.kind === "grid") this._renderGrid(levels, bands, minBrightness);
+      else if (this.kind === "radial") this._renderRadial(levels, bands, minBrightness);
+      else if (this.kind === "cycle") this._renderRing(levels, bands, minBrightness, false);
+      else if (this.kind === "relational") this._renderRing(levels, bands, minBrightness, true);
+      else if (this.kind === "linear") this._renderLinear(levels, bands, minBrightness);
+    }
+
+    // 격자형: cols x rows 픽셀짜리 오프스크린에 채운 뒤 화면 캔버스로 확대(최대 1,000,000칸도 가볍다)
+    _renderGrid(levels, bands, minBrightness) {
       const data = this.imageData.data;
       for (let i = 0; i < bands.length; i++) {
         const b = bands[i];
-        const level = levels[i];
-        const brightness = minBrightness + (1 - minBrightness) * Math.sqrt(Math.max(0, Math.min(1, level)));
+        const brightness = brightnessOf(levels[i], minBrightness);
         const c = b.color;
         const p = (b.row * this.cols + b.col) * 4;
         data[p] = c[0] * brightness;
@@ -62,6 +85,106 @@
       this.ctx.imageSmoothingEnabled = !this.pixelated;
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
       this.ctx.drawImage(this.offscreen, 0, 0, this.cols, this.rows, 0, 0, this.canvas.width, this.canvas.height);
+    }
+
+    // 방사형: 연속 스펙트럼 밴드를 원 한 바퀴에 펼쳐 놓고, 소리가 커지면 그 방향으로 반지름이 늘어난다
+    _renderRadial(levels, bands, minBrightness) {
+      const w = this.canvas.width, h = this.canvas.height;
+      const cx = w / 2, cy = h / 2, maxR = Math.min(w, h) / 2;
+      const innerR = maxR * 0.16, outerR = maxR * 0.92;
+      this.ctx.clearRect(0, 0, w, h);
+      this.ctx.lineWidth = Math.max(1, maxR * 0.01);
+      this.ctx.lineJoin = "round";
+      let prev = null;
+      const n = bands.length;
+      for (let i = 0; i <= n; i++) {
+        const idx = i % n;
+        const b = bands[idx];
+        const brightness = brightnessOf(levels[idx], minBrightness);
+        const angle = b.t * Math.PI * 2 - Math.PI / 2;
+        const r = innerR + brightness * (outerR - innerR);
+        const x = cx + r * Math.cos(angle), y = cy + r * Math.sin(angle);
+        if (prev) {
+          this.ctx.strokeStyle = rgbCss(b.color, brightness);
+          this.ctx.beginPath();
+          this.ctx.moveTo(prev.x, prev.y);
+          this.ctx.lineTo(x, y);
+          this.ctx.stroke();
+        }
+        this.ctx.fillStyle = rgbCss(b.color, brightness);
+        this.ctx.beginPath();
+        this.ctx.arc(x, y, Math.max(1.5, maxR * 0.012), 0, Math.PI * 2);
+        this.ctx.fill();
+        prev = { x, y };
+      }
+    }
+
+    // 사이클·관계형 공용: 음이름 12개를 원 둘레에 고정 배치(순서는 app.js 가 전달하는 bands 순서가
+    // 결정 — 5도권 순서면 "사이클", 반음 순서면 "관계형"). connectActive=true면 동시에 울리는
+    // 음끼리 선으로 이어 화음 모양을 보여준다.
+    _renderRing(levels, bands, minBrightness, connectActive) {
+      const w = this.canvas.width, h = this.canvas.height;
+      const cx = w / 2, cy = h / 2, maxR = Math.min(w, h) / 2;
+      const ringR = maxR * 0.66;
+      this.ctx.clearRect(0, 0, w, h);
+
+      const n = bands.length;
+      const points = bands.map((_, i) => {
+        const angle = (i / n) * Math.PI * 2 - Math.PI / 2;
+        return { x: cx + ringR * Math.cos(angle), y: cy + ringR * Math.sin(angle), angle };
+      });
+
+      if (connectActive) {
+        this.ctx.lineWidth = Math.max(1, maxR * 0.006);
+        for (let i = 0; i < n; i++) {
+          for (let j = i + 1; j < n; j++) {
+            const li = levels[i], lj = levels[j];
+            if (li >= 0.42 && lj >= 0.42) {
+              const a = Math.min(li, lj);
+              this.ctx.strokeStyle = `rgba(230,230,239,${(0.15 + 0.55 * a).toFixed(3)})`;
+              this.ctx.beginPath();
+              this.ctx.moveTo(points[i].x, points[i].y);
+              this.ctx.lineTo(points[j].x, points[j].y);
+              this.ctx.stroke();
+            }
+          }
+        }
+      }
+
+      const baseDot = maxR * 0.045, extraDot = maxR * 0.055;
+      const fontSize = Math.max(10, maxR * 0.07);
+      this.ctx.font = `${fontSize}px -apple-system, "Pretendard", sans-serif`;
+      this.ctx.textAlign = "center";
+      this.ctx.textBaseline = "middle";
+      for (let i = 0; i < n; i++) {
+        const b = bands[i];
+        const brightness = brightnessOf(levels[i], minBrightness);
+        const p = points[i];
+        const dotR = baseDot + brightness * extraDot;
+        this.ctx.fillStyle = rgbCss(b.color, brightness);
+        this.ctx.beginPath();
+        this.ctx.arc(p.x, p.y, dotR, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        const labelR = ringR + baseDot + extraDot + fontSize * 0.9;
+        const lx = cx + labelR * Math.cos(p.angle), ly = cy + labelR * Math.sin(p.angle);
+        this.ctx.fillStyle = "rgba(230,230,239,0.85)";
+        this.ctx.fillText(b.label.replace(/[0-9]/g, ""), lx, ly);
+      }
+    }
+
+    // 직선형: 왼쪽부터 오른쪽으로 저음->고음, 클래식 이퀄라이저 막대 그래프
+    _renderLinear(levels, bands, minBrightness) {
+      const w = this.canvas.width, h = this.canvas.height;
+      this.ctx.clearRect(0, 0, w, h);
+      const n = bands.length;
+      const slot = w / n, gap = slot * 0.18, barW = slot - gap;
+      for (let i = 0; i < n; i++) {
+        const brightness = brightnessOf(levels[i], minBrightness);
+        const barH = Math.max(2, brightness * h);
+        this.ctx.fillStyle = rgbCss(bands[i].color, brightness);
+        this.ctx.fillRect(i * slot + gap / 2, h - barH, barW, barH);
+      }
     }
   }
 

@@ -1,8 +1,8 @@
 """주파수 ↔ 색채 매핑 수학 — js/colorModel.js 와 동일 로직.
 
 소리 주파수(Hz) 구간을 사용자가 고른 스케일(linear/log/exp)로 가시광선 주파수(THz) 구간에
-연결한다. 격자 배치는 두 가지: "스윕형"(N x N, 소리 구간 전체를 균등 분할)과 "음계형"
-(가로 7칸 도레미파솔라시, 세로 옥타브) — 둘 다 칸마다 고정 주파수·고정 색을 가진다.
+연결한다. 여기서 만드는 밴드 목록 4종을 브라우저 쪽 visualizer.js 가 격자/방사형/사이클/
+관계형/직선형 등 다양한 모양으로 그린다 — 밴드마다 고정 주파수·고정 색은 항상 동일하다.
 """
 from __future__ import annotations
 
@@ -12,8 +12,10 @@ from dataclasses import dataclass, field
 EXP_BASE = 9  # log 의 반대 모양(저음 압축·고음 확장) 곡률 상수. normalize_t/value_from_t 가 서로 역함수.
 C_NM_THZ = 299792.458  # 빛의 속도: nm·THz 단위에서 wavelength_nm = C / freq_THz
 VISIBLE_NM = (380.0, 780.0)
-DEGREE_SEMITONES = (0, 2, 4, 5, 7, 9, 11)  # 도 레 미 파 솔 라 시 (C 기준 반음 수)
-DEGREE_NAMES = ("도", "레", "미", "파", "솔", "라", "시")
+# 도 도# 레 레# 미 파 파# 솔 솔# 라 라# 시 — 반음 12개 전부(온음계 7개 사이의 음까지 표현)
+DEGREE_NAMES = ("도", "도#", "레", "레#", "미", "파", "파#", "솔", "솔#", "라", "라#", "시")
+# 5도권(circle of fifths) 순서: 이 순서대로 원 위에 배치하면 이웃끼리 5도 관계가 된다
+FIFTHS_ORDER = (0, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10, 5)
 
 
 def _clamp(v: float, lo: float, hi: float) -> float:
@@ -108,7 +110,7 @@ def build_sweep_bands(
     scale: str,
     grid_size: int,
 ) -> Layout:
-    """스윕형: 격자 N x N 전체의 고정 밴드. 칸 하나 = 소리 주파수 구간을 균등분할한 주파수대 하나."""
+    """격자형(주파수): N x N 전체의 고정 밴드. 칸 하나 = 소리 주파수 구간을 균등분할한 주파수대 하나."""
     n = grid_size
     total = n * n
     bands: list[Band] = []
@@ -121,9 +123,28 @@ def build_sweep_bands(
     return Layout(bands=bands, cols=n, rows=n)
 
 
+def build_frequency_strip(
+    sound_min: float,
+    sound_max: float,
+    light_min: float,
+    light_max: float,
+    scale: str,
+    count: int,
+) -> Layout:
+    """방사형·직선형 공용: 소리 주파수 구간을 1줄로 count개 균등분할한 밴드 목록(연속 스펙트럼)."""
+    bands: list[Band] = []
+    for i in range(count):
+        t = (i + 0.5) / count
+        freq_hz = value_from_t(t, sound_min, sound_max, scale)
+        light_thz = light_min + t * (light_max - light_min)
+        color = wavelength_to_rgb(thz_to_nm(light_thz))
+        bands.append(Band(row=0, col=i, freq_hz=freq_hz, light_thz=light_thz, color=color))
+    return Layout(bands=bands, cols=count, rows=1)
+
+
 def note_frequency(octave: int, degree_index: int) -> float:
-    """평균율 음 하나의 주파수. octave: 과학적 음높이 표기(C4=미디 60) · degree_index: 0~6 (도~시)."""
-    midi = (octave + 1) * 12 + DEGREE_SEMITONES[degree_index]
+    """평균율 음 하나의 주파수. octave: 과학적 음높이 표기(C4=미디 60) · degree_index: 0~11 (도~시, 반음 포함)."""
+    midi = (octave + 1) * 12 + degree_index
     return 440.0 * 2.0 ** ((midi - 69) / 12.0)
 
 
@@ -142,8 +163,8 @@ def build_chroma_bands(
     light_max: float,
     scale: str,
 ) -> Layout:
-    """음계형: 가로 7칸(도레미파솔라시) x 세로 옥타브 수. 칸 하나 = 특정 옥타브의 특정 음 하나.
-    높은 옥타브가 위로 쌓이도록 행을 뒤집어 배치한다."""
+    """격자형(음계): 가로 12칸(도~시, 반음 포함) x 세로 옥타브 수. 칸 하나 = 특정 옥타브의 특정 음
+    하나. 높은 옥타브가 위로 쌓이도록 행을 뒤집어 배치한다."""
     oct_min = _octave_of_midi(_nearest_midi(sound_min))
     oct_max = max(oct_min, _octave_of_midi(_nearest_midi(sound_max)))
     rows = oct_max - oct_min + 1
@@ -157,6 +178,24 @@ def build_chroma_bands(
             light_thz, color = color_for(freq_hz, sound_min, sound_max, light_min, light_max, scale)
             bands.append(Band(row=image_row, col=c, freq_hz=freq_hz, light_thz=light_thz, color=color, label=f"{DEGREE_NAMES[c]}{octave}"))
     return Layout(bands=bands, cols=cols, rows=rows)
+
+
+def build_pitch_class_nodes(
+    sound_min: float,
+    sound_max: float,
+    light_min: float,
+    light_max: float,
+    scale: str,
+) -> list[Band]:
+    """사이클·관계형 공용: 옥타브를 접어서 음이름(피치 클래스) 12개만 남긴 노드. 대표 옥타브는
+    소리 주파수 구간의 기하평균이 속한 옥타브를 쓴다."""
+    rep_octave = _octave_of_midi(_nearest_midi(math.sqrt(sound_min * sound_max)))
+    nodes: list[Band] = []
+    for c in range(len(DEGREE_NAMES)):
+        freq_hz = note_frequency(rep_octave, c)
+        light_thz, color = color_for(freq_hz, sound_min, sound_max, light_min, light_max, scale)
+        nodes.append(Band(row=0, col=c, freq_hz=freq_hz, light_thz=light_thz, color=color, label=f"{DEGREE_NAMES[c]}{rep_octave}"))
+    return nodes
 
 
 def build_layout(

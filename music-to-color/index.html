@@ -20,8 +20,9 @@
       <h1>음악 → 색채 변환기</h1>
       <p class="hint">
         음악의 주파수를 소리 가청 구간 안에서 잘라 가시광선 주파수(색)로 바꿉니다.
-        격자 각 칸은 특정 주파수대에 <b>미리 고정</b>되어 있어 소리가 커지고 작아져도
-        밝기만 변하고 위치는 흔들리지 않습니다.
+        각 칸·점·막대는 특정 주파수(음)에 <b>미리 고정</b>되어 있어 소리가 커지고
+        작아져도 밝기만 변하고 위치는 흔들리지 않습니다. 아래 "시각화 방식"에서
+        격자·방사형·사이클·관계형·직선형 중 고를 수 있습니다.
       </p>
 
       <section>
@@ -71,21 +72,25 @@
       </section>
 
       <section>
-        <h2>격자 배치</h2>
-        <select id="layoutSelect">
-          <option value="chroma" selected>음계형 — 가로 도레미파솔라시, 세로 옥타브</option>
-          <option value="sweep">스윕형 — 소리 구간 전체를 N x N 으로 균등분할</option>
+        <h2>시각화 방식</h2>
+        <select id="visualMode">
+          <option value="chroma" selected>격자형 — 음계 (가로 12음 도~시, 세로 옥타브)</option>
+          <option value="sweep">격자형 — 주파수 (소리 구간을 N x N 균등분할)</option>
+          <option value="radial">방사형 — 원형 스펙트럼</option>
+          <option value="cycle">사이클 — 5도권</option>
+          <option value="relational">관계형 — 화음 관계도</option>
+          <option value="linear">직선형 — 막대 스펙트럼</option>
         </select>
 
-        <div id="gridSizeSection" style="display:none; margin-top:10px;">
-          <h2 style="margin-top:14px;">격자 크기 (칸 하나 = 고정 주파수대 하나)</h2>
-          <input type="range" id="gridSize" min="10" max="1000" step="1" value="32" />
-          <div id="gridSizeVal" class="hint"></div>
+        <div id="resolutionSection" style="display:none; margin-top:10px;">
+          <h2 id="resolutionLabel" style="margin-top:14px;">해상도</h2>
+          <input type="range" id="resolution" min="10" max="1000" step="1" value="32" />
+          <div id="resolutionVal" class="hint"></div>
           <div id="gridWarning" class="warning">
             칸 수가 매우 많으면(가로x세로 500 이상) 브라우저에 따라 느려질 수 있습니다.
           </div>
         </div>
-        <div id="chromaInfo" class="hint"></div>
+        <div id="modeInfo" class="hint"></div>
       </section>
 
       <section>

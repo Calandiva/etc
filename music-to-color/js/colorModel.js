@@ -1,13 +1,15 @@
 /* 주파수 ↔ 색채 매핑 수학 — python/music_to_color/color_model.py 와 동일 로직.
    소리 주파수(Hz) 구간을 사용자가 고른 스케일(linear/log/exp)로 가시광선 주파수(THz) 구간에
-   연결한다. 격자 배치는 두 가지: "스윕형"(N x N, 소리 구간 전체를 균등 분할)과
-   "음계형"(가로 7칸 도레미파솔라시, 세로 옥타브) — 둘 다 칸마다 고정 주파수·고정 색을 가진다. */
+   연결한다. 여기서 만드는 밴드 목록 4종을 visualizer.js 가 격자/방사형/사이클/관계형/직선형
+   등 다양한 모양으로 그린다 — 밴드마다 고정 주파수·고정 색은 항상 동일하다. */
 (function (g) {
   const EXP_BASE = 9; // log 의 반대 모양(저음 압축·고음 확장) 곡률 상수. normalizeT/valueFromT 가 서로 역함수.
   const C_NM_THZ = 299792.458; // 빛의 속도: nm·THz 단위에서 wavelength_nm = C / freq_THz
   const VISIBLE_NM = [380, 780];
-  const DEGREE_SEMITONES = [0, 2, 4, 5, 7, 9, 11]; // 도 레 미 파 솔 라 시 (C 기준 반음 수)
-  const DEGREE_NAMES = ["도", "레", "미", "파", "솔", "라", "시"];
+  // 도 도# 레 레# 미 파 파# 솔 솔# 라 라# 시 — 반음 12개 전부(온음계 7개 사이의 음까지 표현)
+  const DEGREE_NAMES = ["도", "도#", "레", "레#", "미", "파", "파#", "솔", "솔#", "라", "라#", "시"];
+  // 5도권(circle of fifths) 순서: 이 순서대로 원 위에 배치하면 이웃끼리 5도 관계가 된다
+  const FIFTHS_ORDER = [0, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10, 5];
 
   const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
@@ -54,10 +56,10 @@
   function colorFor(freqHz, soundMin, soundMax, lightMin, lightMax, scale) {
     const t = normalizeT(freqHz, soundMin, soundMax, scale);
     const lightTHz = lightMin + t * (lightMax - lightMin);
-    return { lightTHz, color: wavelengthToRGB(thzToNm(lightTHz)) };
+    return { t, lightTHz, color: wavelengthToRGB(thzToNm(lightTHz)) };
   }
 
-  // 스윕형: 격자 N x N 전체의 고정 밴드. 칸 하나 = 소리 주파수 구간을 균등분할한 주파수대 하나.
+  // 격자형(주파수): N x N 전체의 고정 밴드. 칸 하나 = 소리 주파수 구간을 균등분할한 주파수대 하나.
   function buildSweepBands({ soundMin, soundMax, lightMin, lightMax, scale, gridSize }) {
     const n = gridSize, bands = new Array(n * n);
     for (let i = 0; i < n * n; i++) {
@@ -65,26 +67,35 @@
       const freqHz = valueFromT(t, soundMin, soundMax, scale);
       const lightTHz = lightMin + t * (lightMax - lightMin);
       bands[i] = {
-        row: Math.floor(i / n),
-        col: i % n,
-        freqHz,
-        lightTHz,
+        row: Math.floor(i / n), col: i % n, freqHz, lightTHz, t,
         color: wavelengthToRGB(thzToNm(lightTHz)),
       };
     }
     return { bands, cols: n, rows: n };
   }
 
-  // 평균율 음 하나의 주파수. octave: 과학적 음높이 표기(C4=미디 60) · degreeIndex: 0~6 (도~시)
+  // 방사형·직선형 공용: 소리 주파수 구간을 1줄로 count개 균등분할한 밴드 목록(연속 스펙트럼).
+  function buildFrequencyStrip({ soundMin, soundMax, lightMin, lightMax, scale, count }) {
+    const bands = new Array(count);
+    for (let i = 0; i < count; i++) {
+      const t = (i + 0.5) / count;
+      const freqHz = valueFromT(t, soundMin, soundMax, scale);
+      const lightTHz = lightMin + t * (lightMax - lightMin);
+      bands[i] = { row: 0, col: i, freqHz, lightTHz, t, color: wavelengthToRGB(thzToNm(lightTHz)) };
+    }
+    return { bands, cols: count, rows: 1 };
+  }
+
+  // 평균율 음 하나의 주파수. octave: 과학적 음높이 표기(C4=미디 60) · degreeIndex: 0~11 (도~시, 반음 포함)
   function noteFrequency(octave, degreeIndex) {
-    const midi = (octave + 1) * 12 + DEGREE_SEMITONES[degreeIndex];
+    const midi = (octave + 1) * 12 + degreeIndex;
     return 440 * Math.pow(2, (midi - 69) / 12);
   }
 
   const nearestMidi = (freqHz) => Math.round(69 + 12 * Math.log2(freqHz / 440));
   const octaveOfMidi = (midi) => Math.floor(midi / 12) - 1;
 
-  // 음계형: 가로 7칸(도레미파솔라시) x 세로 옥타브 수. 칸 하나 = 특정 옥타브의 특정 음 하나.
+  // 격자형(음계): 가로 12칸(도~시, 반음 포함) x 세로 옥타브 수. 칸 하나 = 특정 옥타브의 특정 음 하나.
   // 높은 옥타브가 위로 쌓이도록 행을 뒤집어 배치한다.
   function buildChromaBands({ soundMin, soundMax, lightMin, lightMax, scale }) {
     const octMin = octaveOfMidi(nearestMidi(soundMin));
@@ -103,14 +114,23 @@
     return { bands, cols, rows };
   }
 
-  function buildLayout(settings) {
-    return settings.layout === "sweep" ? buildSweepBands(settings) : buildChromaBands(settings);
+  // 사이클·관계형 공용: 옥타브를 접어서 음이름(피치 클래스) 12개만 남긴 노드. 대표 옥타브는
+  // 소리 주파수 구간의 기하평균이 속한 옥타브를 쓴다.
+  function buildPitchClassNodes({ soundMin, soundMax, lightMin, lightMax, scale }) {
+    const repOctave = octaveOfMidi(nearestMidi(Math.sqrt(soundMin * soundMax)));
+    const nodes = new Array(DEGREE_NAMES.length);
+    for (let c = 0; c < DEGREE_NAMES.length; c++) {
+      const freqHz = noteFrequency(repOctave, c);
+      const { lightTHz, color } = colorFor(freqHz, soundMin, soundMax, lightMin, lightMax, scale);
+      nodes[c] = { col: c, freqHz, lightTHz, color, label: `${DEGREE_NAMES[c]}${repOctave}` };
+    }
+    return nodes;
   }
 
   g.ColorModel = {
-    normalizeT, valueFromT, thzToNm, wavelengthToRGB,
-    buildSweepBands, buildChromaBands, buildLayout,
-    noteFrequency, DEGREE_NAMES,
+    normalizeT, valueFromT, thzToNm, wavelengthToRGB, colorFor,
+    buildSweepBands, buildFrequencyStrip, buildChromaBands, buildPitchClassNodes,
+    noteFrequency, DEGREE_NAMES, FIFTHS_ORDER,
     EXP_BASE, VISIBLE_NM,
   };
 })(window);

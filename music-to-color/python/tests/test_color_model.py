@@ -3,7 +3,11 @@ import math
 import pytest
 
 from music_to_color.color_model import (
+    DEGREE_NAMES,
+    FIFTHS_ORDER,
     build_chroma_bands,
+    build_frequency_strip,
+    build_pitch_class_nodes,
     build_sweep_bands,
     normalize_t,
     note_frequency,
@@ -87,18 +91,19 @@ def test_build_sweep_bands_reversed_light_range_still_monotonic_colors():
 
 def test_note_frequency_known_values():
     # A4 = 440Hz(라), C4 = 261.63Hz(도) 가 표준 평균율 기준값과 일치해야 한다.
-    assert note_frequency(4, 5) == pytest.approx(440.0, abs=0.01)  # 라4
+    # 반음 12개 전부 쓰므로 라는 도(0)에서 9번째 반음(index 9).
+    assert note_frequency(4, 9) == pytest.approx(440.0, abs=0.01)  # 라4
     assert note_frequency(4, 0) == pytest.approx(261.63, abs=0.01)  # 도4
-    assert note_frequency(3, 5) == pytest.approx(220.0, abs=0.01)  # 라3 (한 옥타브 아래 = 절반)
+    assert note_frequency(3, 9) == pytest.approx(220.0, abs=0.01)  # 라3 (한 옥타브 아래 = 절반)
 
 
-def test_build_chroma_bands_layout_is_7_columns_by_octaves():
+def test_build_chroma_bands_layout_is_12_columns_by_octaves():
     layout = build_chroma_bands(100.0, 4000.0, 405.0, 790.0, "log")
-    assert layout.cols == 7
+    assert layout.cols == 12
     assert len(layout.bands) == layout.cols * layout.rows
 
     cols = {b.col for b in layout.bands}
-    assert cols == set(range(7))
+    assert cols == set(range(12))
 
     # 모든 밴드 주파수가 음계상 올바른 반음에 정확히(평균율) 위치해야 한다
     for b in layout.bands:
@@ -113,3 +118,35 @@ def test_build_chroma_bands_higher_octave_renders_toward_row_zero():
     rows_sorted = sorted(do_band_by_row)
     freqs_sorted_by_row = [do_band_by_row[r] for r in rows_sorted]
     assert freqs_sorted_by_row == sorted(freqs_sorted_by_row, reverse=True)
+
+
+@pytest.mark.parametrize("scale", SCALES)
+@pytest.mark.parametrize("count", [8, 48, 180])
+def test_build_frequency_strip_shape_and_bounds(scale, count):
+    layout = build_frequency_strip(100.0, 4000.0, 405.0, 790.0, scale, count)
+    assert layout.cols == count and layout.rows == 1
+    assert len(layout.bands) == count
+    assert {b.row for b in layout.bands} == {0}
+    assert {b.col for b in layout.bands} == set(range(count))
+    freqs = [b.freq_hz for b in layout.bands]
+    assert all(100.0 <= f <= 4000.0 for f in freqs)
+    assert all(freqs[i] <= freqs[i + 1] for i in range(len(freqs) - 1))
+
+
+def test_build_pitch_class_nodes_returns_12_named_notes_same_octave():
+    nodes = build_pitch_class_nodes(100.0, 4000.0, 405.0, 790.0, "log")
+    assert len(nodes) == 12
+    assert [n.col for n in nodes] == list(range(12))
+    octaves = {n.label[-1] for n in nodes}  # 모든 노드가 같은 대표 옥타브를 써야 한다
+    assert len(octaves) == 1
+    for n, name in zip(nodes, DEGREE_NAMES):
+        assert n.label.startswith(name)
+
+
+def test_fifths_order_is_a_permutation_of_12_semitones():
+    assert sorted(FIFTHS_ORDER) == list(range(12))
+    # 이웃끼리 7반음(완전5도) 또는 그 보수(5반음) 차이여야 진짜 5도권이다
+    for i in range(len(FIFTHS_ORDER)):
+        a, b = FIFTHS_ORDER[i], FIFTHS_ORDER[(i + 1) % len(FIFTHS_ORDER)]
+        diff = (b - a) % 12
+        assert diff in (5, 7)

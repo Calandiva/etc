@@ -31,6 +31,16 @@
       return this.ctx;
     }
 
+    // 브라우저 자동재생 정책 때문에 AudioContext는 사용자 제스처(클릭) "안에서 직접" resume()을
+    // 불러야 풀린다 — await 를 한 번이라도 거치고 나면(파일 디코딩 등) 같은 제스처로 안 쳐줘서
+    // 재생 버튼을 눌러도 소리가 안 나고, 그다음 클릭(새 제스처)에서야 풀리는 문제가 있었다.
+    // 그래서 파일 선택/샘플 버튼/재생 버튼 클릭 핸들러 맨 처음, await 전에 이걸 동기적으로 부른다.
+    unlock() {
+      const ctx = this.ensureContext();
+      if (ctx.state !== "running") ctx.resume();
+      return ctx;
+    }
+
     setFftSize(size) {
       this.analyser.fftSize = size;
       this.freqData = new Float32Array(this.analyser.frequencyBinCount);
