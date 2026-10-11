@@ -1,5 +1,11 @@
 /* Web Audio 재생 + FFT 분석. 밴드별 레벨은 "그 주파수에서 가장 가까운 두 FFT bin 사이 선형보간"으로
-   구해서, 격자 칸 수(최대 1000x1000)가 FFT 해상도보다 훨씬 많아도 빈 칸 없이 매끈하게 채운다. */
+   구해서, 격자 칸 수(최대 1000x1000)가 FFT 해상도보다 훨씬 많아도 빈 칸 없이 매끈하게 채운다.
+
+   실제 음원은 기음(기본주파수) 하나에 배음(정수배 倍音)이 줄줄이 따라붙어, 배음들도 꽤 크게
+   잡히는 바람에 모든 대역이 한꺼번에 울렁거리는 문제가 있다. _emphasizeFundamentals() 가 매
+   프레임 스펙트럼 피크를 찾아, 가장 강한 피크(기음)는 그대로 두고 그 정수배 주파수에 걸리는
+   약한 피크(배음)는 어둡게 깎아서, 실제로 울리는 음 각각이 또렷한 하나의 밝은 신호로 보이게
+   한다. */
 (function (g) {
   class AudioEngine {
     constructor() {
@@ -94,20 +100,67 @@
       return Math.min(t, this.buffer.duration);
     }
 
-    // bands: colorModel.buildBands() 결과. 반환값: 각 밴드의 0..1 정규화 레벨(Float32Array)
-    getBandLevels(bands, out) {
+    // 매 프레임 스펙트럼에서 피크를 찾아 기음/배음을 분류하고, 배음 피크 주변을 어둡게 깎은
+    // 보정 스펙트럼을 돌려준다. strength 0 = 보정 없음(원본 그대로), 1 = 강하게 깎음.
+    _emphasizeFundamentals(strength) {
+      const src = this.freqData, n = src.length;
+      if (!this._adjusted || this._adjusted.length !== n) this._adjusted = new Float32Array(n);
+      const adjusted = this._adjusted;
+      adjusted.set(src);
+      if (strength <= 0) return adjusted;
+
+      const binHz = this.ctx.sampleRate / this.analyser.fftSize;
+      const span = this.maxDb - this.minDb;
+      const threshold = this.minDb + 0.12 * span;
+      const minSeparationHz = 20;
+
+      const peaks = [];
+      for (let i = 1; i < n - 1; i++) {
+        const v = src[i];
+        if (v >= threshold && v > src[i - 1] && v >= src[i + 1]) peaks.push({ i, freq: i * binHz, db: v });
+      }
+      peaks.sort((a, b) => b.db - a.db);
+
+      const kept = [];
+      for (const p of peaks) {
+        if (kept.every((k) => Math.abs(k.freq - p.freq) >= minSeparationHz)) kept.push(p);
+      }
+
+      const fundamentals = [];
+      const window = 2; // 배음 피크의 FFT 로브 폭만큼 주변 bin도 같이 깎는다
+      const darkenDb = 36 * strength;
+      for (const p of kept) {
+        let harmonicOrder = 0;
+        for (const f of fundamentals) {
+          const ratio = p.freq / f.freq;
+          const k = Math.round(ratio);
+          if (k >= 2 && k <= 16 && Math.abs(ratio - k) / k <= 0.03) { harmonicOrder = k; break; }
+        }
+        if (harmonicOrder > 0) {
+          const reduce = darkenDb * Math.min(1.5, 0.6 + 0.08 * harmonicOrder);
+          for (let j = Math.max(0, p.i - window); j <= Math.min(n - 1, p.i + window); j++) adjusted[j] -= reduce;
+        } else {
+          fundamentals.push(p);
+        }
+      }
+      return adjusted;
+    }
+
+    // bands: colorModel.buildLayout() 의 bands 목록. 반환값: 각 밴드의 0..1 정규화 레벨(Float32Array)
+    getBandLevels(bands, out, harmonicSuppress = 0.7) {
       if (!this.analyser) return out;
       this.analyser.getFloatFrequencyData(this.freqData);
+      const spectrum = this._emphasizeFundamentals(harmonicSuppress);
       const sampleRate = this.ctx.sampleRate;
       const fftSize = this.analyser.fftSize;
-      const n = this.freqData.length;
+      const n = spectrum.length;
       const span = this.maxDb - this.minDb;
       for (let i = 0; i < bands.length; i++) {
         const binPos = (bands[i].freqHz * fftSize) / sampleRate;
         const lo = Math.max(0, Math.min(n - 1, Math.floor(binPos)));
         const hi = Math.max(0, Math.min(n - 1, lo + 1));
         const frac = binPos - lo;
-        const db = this.freqData[lo] + (this.freqData[hi] - this.freqData[lo]) * frac;
+        const db = spectrum[lo] + (spectrum[hi] - spectrum[lo]) * frac;
         out[i] = Math.max(0, Math.min(1, (db - this.minDb) / span));
       }
       return out;

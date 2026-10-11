@@ -71,12 +71,21 @@
       </section>
 
       <section>
-        <h2>격자 크기 (칸 하나 = 고정 주파수대 하나)</h2>
-        <input type="range" id="gridSize" min="10" max="1000" step="1" value="32" />
-        <div id="gridSizeVal" class="hint"></div>
-        <div id="gridWarning" class="warning">
-          칸 수가 매우 많으면(가로x세로 500 이상) 브라우저에 따라 느려질 수 있습니다.
+        <h2>격자 배치</h2>
+        <select id="layoutSelect">
+          <option value="chroma" selected>음계형 — 가로 도레미파솔라시, 세로 옥타브</option>
+          <option value="sweep">스윕형 — 소리 구간 전체를 N x N 으로 균등분할</option>
+        </select>
+
+        <div id="gridSizeSection" style="display:none; margin-top:10px;">
+          <h2 style="margin-top:14px;">격자 크기 (칸 하나 = 고정 주파수대 하나)</h2>
+          <input type="range" id="gridSize" min="10" max="1000" step="1" value="32" />
+          <div id="gridSizeVal" class="hint"></div>
+          <div id="gridWarning" class="warning">
+            칸 수가 매우 많으면(가로x세로 500 이상) 브라우저에 따라 느려질 수 있습니다.
+          </div>
         </div>
+        <div id="chromaInfo" class="hint"></div>
       </section>
 
       <section>
@@ -86,6 +95,15 @@
             <input type="range" id="smoothing" min="0" max="0.95" step="0.01" value="0.7" />
           </label>
         </div>
+        <div class="row">
+          <label>배음 억제(기음 강조)
+            <input type="range" id="harmonicSuppress" min="0" max="1" step="0.05" value="0.7" />
+          </label>
+        </div>
+        <p class="hint">
+          실제 악기 소리는 기음 하나에 배음이 줄줄이 따라붙어 여러 대역이 한꺼번에 반짝입니다.
+          이 값을 올리면 가장 강한 음(기음)만 밝게 남기고 배음은 어둡게 깎습니다.
+        </p>
         <div class="row">
           <label>최소 밝기(무음일 때)
             <input type="range" id="minBrightness" min="0" max="0.5" step="0.01" value="0.08" />

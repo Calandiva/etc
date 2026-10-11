@@ -9,11 +9,15 @@
   const ui = {
     fileInput: el("fileInput"),
     playBtn: el("playBtn"),
+    layoutSelect: el("layoutSelect"),
     soundMin: el("soundMin"), soundMax: el("soundMax"),
     lightMin: el("lightMin"), lightMax: el("lightMax"),
     scaleSelect: el("scaleSelect"),
+    gridSizeSection: el("gridSizeSection"),
     gridSize: el("gridSize"), gridSizeVal: el("gridSizeVal"),
+    chromaInfo: el("chromaInfo"),
     smoothing: el("smoothing"), minBrightness: el("minBrightness"),
+    harmonicSuppress: el("harmonicSuppress"),
     pixelated: el("pixelated"),
     fullscreenBtn: el("fullscreenBtn"),
     panelToggle: el("panelToggle"),
@@ -31,6 +35,7 @@
 
   function readSettings() {
     return {
+      layout: ui.layoutSelect.value,
       soundMin: clampNum(ui.soundMin.value, 20, 19999, 100),
       soundMax: clampNum(ui.soundMax.value, 21, 20000, 4000),
       lightMin: clampNum(ui.lightMin.value, 50, 2000, 405),
@@ -43,12 +48,23 @@
   function rebuildBands() {
     const s = readSettings();
     if (s.soundMin >= s.soundMax) s.soundMax = s.soundMin + 1;
-    ui.gridSizeVal.textContent = `${s.gridSize} x ${s.gridSize} (${(s.gridSize * s.gridSize).toLocaleString()}칸)`;
-    ui.gridWarning.style.display = s.gridSize * s.gridSize > 250000 ? "block" : "none";
-    state.bands = ColorModel.buildBands(s);
-    state.raw = new Float32Array(state.bands.length);
-    state.smoothed = new Float32Array(state.bands.length);
-    visualizer.setGridSize(s.gridSize);
+
+    const isChroma = s.layout === "chroma";
+    ui.gridSizeSection.style.display = isChroma ? "none" : "block";
+    ui.chromaInfo.style.display = isChroma ? "block" : "none";
+
+    const { bands, cols, rows } = ColorModel.buildLayout(s);
+    state.bands = bands;
+    state.raw = new Float32Array(bands.length);
+    state.smoothed = new Float32Array(bands.length);
+    visualizer.setGridDims(cols, rows);
+
+    if (isChroma) {
+      ui.chromaInfo.textContent = `가로 ${cols}칸(도레미파솔라시) x 세로 ${rows}옥타브 (${bands.length}칸)`;
+    } else {
+      ui.gridSizeVal.textContent = `${s.gridSize} x ${s.gridSize} (${(s.gridSize * s.gridSize).toLocaleString()}칸)`;
+      ui.gridWarning.style.display = s.gridSize * s.gridSize > 250000 ? "block" : "none";
+    }
   }
 
   function fmtTime(t) {
@@ -65,7 +81,8 @@
     state.frame++;
     if (state.frame % skip !== 0) return;
 
-    if (engine.playing) engine.getBandLevels(state.bands, state.raw);
+    const harmonicSuppress = clampNum(ui.harmonicSuppress.value, 0, 1, 0.7);
+    if (engine.playing) engine.getBandLevels(state.bands, state.raw, harmonicSuppress);
     else state.raw.fill(0);
 
     const alpha = clampNum(ui.smoothing.value, 0, 0.97, 0.7);
@@ -83,7 +100,7 @@
     }
   }
 
-  ["soundMin", "soundMax", "lightMin", "lightMax", "scaleSelect", "gridSize"].forEach((id) => {
+  ["layoutSelect", "soundMin", "soundMax", "lightMin", "lightMax", "scaleSelect", "gridSize"].forEach((id) => {
     ui[id].addEventListener("change", rebuildBands);
   });
   ui.gridSize.addEventListener("input", rebuildBands);

@@ -1,10 +1,13 @@
 /* 주파수 ↔ 색채 매핑 수학 — python/music_to_color/color_model.py 와 동일 로직.
    소리 주파수(Hz) 구간을 사용자가 고른 스케일(linear/log/exp)로 가시광선 주파수(THz) 구간에
-   연결하고, 격자 칸 하나당 고정 주파수대 하나를 미리 배정해 위치가 흔들리지 않게 한다. */
+   연결한다. 격자 배치는 두 가지: "스윕형"(N x N, 소리 구간 전체를 균등 분할)과
+   "음계형"(가로 7칸 도레미파솔라시, 세로 옥타브) — 둘 다 칸마다 고정 주파수·고정 색을 가진다. */
 (function (g) {
   const EXP_BASE = 9; // log 의 반대 모양(저음 압축·고음 확장) 곡률 상수. normalizeT/valueFromT 가 서로 역함수.
   const C_NM_THZ = 299792.458; // 빛의 속도: nm·THz 단위에서 wavelength_nm = C / freq_THz
   const VISIBLE_NM = [380, 780];
+  const DEGREE_SEMITONES = [0, 2, 4, 5, 7, 9, 11]; // 도 레 미 파 솔 라 시 (C 기준 반음 수)
+  const DEGREE_NAMES = ["도", "레", "미", "파", "솔", "라", "시"];
 
   const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
@@ -48,8 +51,14 @@
     return [Math.round(255 * adjust(r)), Math.round(255 * adjust(gg)), Math.round(255 * adjust(b))];
   }
 
-  // 격자 N x N 전체의 고정 밴드 목록을 미리 계산한다: 칸 하나 = 소리 주파수대 하나 = 고정 색.
-  function buildBands({ soundMin, soundMax, lightMin, lightMax, scale, gridSize }) {
+  function colorFor(freqHz, soundMin, soundMax, lightMin, lightMax, scale) {
+    const t = normalizeT(freqHz, soundMin, soundMax, scale);
+    const lightTHz = lightMin + t * (lightMax - lightMin);
+    return { lightTHz, color: wavelengthToRGB(thzToNm(lightTHz)) };
+  }
+
+  // 스윕형: 격자 N x N 전체의 고정 밴드. 칸 하나 = 소리 주파수 구간을 균등분할한 주파수대 하나.
+  function buildSweepBands({ soundMin, soundMax, lightMin, lightMax, scale, gridSize }) {
     const n = gridSize, bands = new Array(n * n);
     for (let i = 0; i < n * n; i++) {
       const t = (i + 0.5) / (n * n);
@@ -63,8 +72,45 @@
         color: wavelengthToRGB(thzToNm(lightTHz)),
       };
     }
-    return bands;
+    return { bands, cols: n, rows: n };
   }
 
-  g.ColorModel = { normalizeT, valueFromT, thzToNm, wavelengthToRGB, buildBands, EXP_BASE, VISIBLE_NM };
+  // 평균율 음 하나의 주파수. octave: 과학적 음높이 표기(C4=미디 60) · degreeIndex: 0~6 (도~시)
+  function noteFrequency(octave, degreeIndex) {
+    const midi = (octave + 1) * 12 + DEGREE_SEMITONES[degreeIndex];
+    return 440 * Math.pow(2, (midi - 69) / 12);
+  }
+
+  const nearestMidi = (freqHz) => Math.round(69 + 12 * Math.log2(freqHz / 440));
+  const octaveOfMidi = (midi) => Math.floor(midi / 12) - 1;
+
+  // 음계형: 가로 7칸(도레미파솔라시) x 세로 옥타브 수. 칸 하나 = 특정 옥타브의 특정 음 하나.
+  // 높은 옥타브가 위로 쌓이도록 행을 뒤집어 배치한다.
+  function buildChromaBands({ soundMin, soundMax, lightMin, lightMax, scale }) {
+    const octMin = octaveOfMidi(nearestMidi(soundMin));
+    const octMax = Math.max(octMin, octaveOfMidi(nearestMidi(soundMax)));
+    const rows = octMax - octMin + 1, cols = DEGREE_NAMES.length;
+    const bands = [];
+    for (let r = 0; r < rows; r++) {
+      const octave = octMin + r;
+      const imageRow = rows - 1 - r;
+      for (let c = 0; c < cols; c++) {
+        const freqHz = noteFrequency(octave, c);
+        const { lightTHz, color } = colorFor(freqHz, soundMin, soundMax, lightMin, lightMax, scale);
+        bands.push({ row: imageRow, col: c, freqHz, lightTHz, color, label: `${DEGREE_NAMES[c]}${octave}` });
+      }
+    }
+    return { bands, cols, rows };
+  }
+
+  function buildLayout(settings) {
+    return settings.layout === "sweep" ? buildSweepBands(settings) : buildChromaBands(settings);
+  }
+
+  g.ColorModel = {
+    normalizeT, valueFromT, thzToNm, wavelengthToRGB,
+    buildSweepBands, buildChromaBands, buildLayout,
+    noteFrequency, DEGREE_NAMES,
+    EXP_BASE, VISIBLE_NM,
+  };
 })(window);
