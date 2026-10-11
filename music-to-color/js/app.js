@@ -104,6 +104,26 @@
     }
   });
 
+  document.querySelectorAll(".sampleBtn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      document.querySelectorAll(".sampleBtn").forEach((b) => (b.disabled = true));
+      ui.status.textContent = `${btn.dataset.name} 불러오는 중...`;
+      try {
+        const res = await fetch(btn.dataset.src);
+        const arrayBuffer = await res.arrayBuffer();
+        await engine.loadArrayBuffer(arrayBuffer);
+        ui.status.textContent = `샘플: ${btn.dataset.name}`;
+        ui.playBtn.disabled = false;
+        engine.play();
+        ui.playBtn.textContent = "일시정지";
+      } catch (err) {
+        ui.status.textContent = "샘플 불러오기 실패: " + err.message;
+      } finally {
+        document.querySelectorAll(".sampleBtn").forEach((b) => (b.disabled = false));
+      }
+    });
+  });
+
   ui.playBtn.addEventListener("click", () => {
     if (engine.playing) {
       engine.pause();

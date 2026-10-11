@@ -13,6 +13,10 @@
 있고, **⚙ 설정** 버튼으로 패널을 접었다 펼 수 있습니다. 창 크기·전체화면 전환 시
 격자는 항상 가능한 가장 큰 정사각형으로 다시 배치됩니다.
 
+파일이 없어도 **샘플 음원** 패널의 버튼 4개(주파수 스윕·아르페지오·리듬 비트·지속 화음)로
+바로 재생해 볼 수 있습니다. 모두 저작권 걱정 없는 합성 사인파로, `python -m
+music_to_color.make_samples`(아래 Python 섹션)로 `samples/`에 다시 만들 수 있습니다.
+
 ## 사용자가 직접 설정하는 것
 
 | 설정 | 의미 | 기본값 |
@@ -53,7 +57,9 @@ js/app.js                          — UI 연결, 메인 루프
 
 python/music_to_color/color_model.py  — js/colorModel.js 와 동일한 매핑 수학(Python)
 python/music_to_color/audio_render.py — WAV 오프라인 분석 CLI (JSON/영상 출력)
+python/music_to_color/make_samples.py — index.html의 샘플 재생용 합성 WAV 4개 생성
 python/tests/test_color_model.py      — 매핑 수학 단위 테스트
+samples/                              — 합성 샘플 음원 (sweep/arpeggio/rhythm_beat/sustained_chord)
 ```
 
 JS와 Python은 같은 수학(스케일 정규화, 파장→RGB, 밴드 생성)을 각자 구현하며,

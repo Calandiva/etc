@@ -68,6 +68,10 @@ canvas#canvas {
 #panel input[type="file"] { width: 100%; font-size: 12px; color: #c7c7db; }
 #panel button#playBtn { background: #3a3af0; color: #fff; border: none; border-radius: 6px; padding: 8px 16px; cursor: pointer; }
 #panel button#playBtn:disabled { background: #333; cursor: not-allowed; }
+#panel .row.samples { gap: 6px; }
+#panel .sampleBtn { background: #1c1c28; color: #e8e8ef; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 6px 10px; font-size: 12px; cursor: pointer; }
+#panel .sampleBtn:hover { background: #262636; }
+#panel .sampleBtn:disabled { opacity: 0.5; cursor: wait; }
 .status { font-size: 12px; color: #9a9ab0; margin-top: 6px; word-break: break-all; }
 #timeDisplay { font-size: 12px; color: #9a9ab0; }
 

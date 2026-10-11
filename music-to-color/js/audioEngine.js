@@ -37,16 +37,20 @@
       this.maxDb = maxDb;
     }
 
-    async loadFile(file) {
+    async loadArrayBuffer(arrayBuffer) {
       const ctx = this.ensureContext();
-      const arrayBuffer = await file.arrayBuffer();
       this.buffer = await ctx.decodeAudioData(arrayBuffer);
       this.stop();
+    }
+
+    async loadFile(file) {
+      await this.loadArrayBuffer(await file.arrayBuffer());
     }
 
     play() {
       if (!this.buffer || this.playing) return;
       const ctx = this.ensureContext();
+      if (ctx.state === "suspended") ctx.resume();
       const node = ctx.createBufferSource();
       node.buffer = this.buffer;
       node.connect(this.analyser);
