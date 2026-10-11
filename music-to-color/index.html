@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>음악 → 색채 변환기</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div id="app">
+  <div id="stage">
+    <canvas id="canvas"></canvas>
+
+    <div id="toolbar">
+      <button id="panelToggle" title="설정 패널 접기/펼치기">⚙ 설정</button>
+      <button id="fullscreenBtn" title="전체화면">⛶ 전체화면</button>
+    </div>
+
+    <aside id="panel">
+      <h1>음악 → 색채 변환기</h1>
+      <p class="hint">
+        음악의 주파수를 소리 가청 구간 안에서 잘라 가시광선 주파수(색)로 바꿉니다.
+        격자 각 칸은 특정 주파수대에 <b>미리 고정</b>되어 있어 소리가 커지고 작아져도
+        밝기만 변하고 위치는 흔들리지 않습니다.
+      </p>
+
+      <section>
+        <h2>오디오</h2>
+        <input type="file" id="fileInput" accept="audio/*" />
+        <div class="row">
+          <button id="playBtn" disabled>재생</button>
+          <span id="timeDisplay">0:00 / 0:00</span>
+        </div>
+        <div id="status" class="status"></div>
+      </section>
+
+      <section>
+        <h2>소리 주파수 구간 (Hz, 가청 20~20,000)</h2>
+        <div class="row">
+          <label>최소 <input type="number" id="soundMin" value="100" min="20" max="19999" step="1" /></label>
+          <label>최대 <input type="number" id="soundMax" value="4000" min="21" max="20000" step="1" /></label>
+        </div>
+      </section>
+
+      <section>
+        <h2>가시광선 주파수 구간 (THz, 가시광선 약 400~790)</h2>
+        <div class="row">
+          <label>최소 <input type="number" id="lightMin" value="405" min="50" max="2000" step="1" /></label>
+          <label>최대 <input type="number" id="lightMax" value="790" min="50" max="2000" step="1" /></label>
+        </div>
+      </section>
+
+      <section>
+        <h2>연결 방식</h2>
+        <select id="scaleSelect">
+          <option value="linear">리니어 (선형)</option>
+          <option value="log" selected>로그 (음정 체감과 비슷)</option>
+          <option value="exp">지수 (저음 압축 · 고음 확장)</option>
+        </select>
+      </section>
+
+      <section>
+        <h2>격자 크기 (칸 하나 = 고정 주파수대 하나)</h2>
+        <input type="range" id="gridSize" min="10" max="1000" step="1" value="32" />
+        <div id="gridSizeVal" class="hint"></div>
+        <div id="gridWarning" class="warning">
+          칸 수가 매우 많으면(가로x세로 500 이상) 브라우저에 따라 느려질 수 있습니다.
+        </div>
+      </section>
+
+      <section>
+        <h2>표시 옵션</h2>
+        <div class="row">
+          <label>부드러움(평활)
+            <input type="range" id="smoothing" min="0" max="0.95" step="0.01" value="0.7" />
+          </label>
+        </div>
+        <div class="row">
+          <label>최소 밝기(무음일 때)
+            <input type="range" id="minBrightness" min="0" max="0.5" step="0.01" value="0.08" />
+          </label>
+        </div>
+        <div class="row">
+          <label><input type="checkbox" id="pixelated" checked /> 칸을 선명하게(픽셀 느낌)</label>
+        </div>
+      </section>
+    </aside>
+  </div>
+</div>
+
+<script src="js/colorModel.js"></script>
+<script src="js/audioEngine.js"></script>
+<script src="js/visualizer.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

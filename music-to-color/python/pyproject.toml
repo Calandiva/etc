@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "music-to-color"
+version = "0.1.0"
+description = "음악 주파수를 가시광선 색채로 변환하는 매핑 수학과 오프라인 분석 CLI"
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.24"]
+
+[tool.setuptools]
+packages = ["music_to_color"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
