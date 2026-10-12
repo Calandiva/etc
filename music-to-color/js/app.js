@@ -26,20 +26,32 @@
     gridWarning: el("gridWarning"),
   };
 
-  // 격자형(주파수)·방사형·직선형만 "해상도"를 직접 고른다. 음계형/사이클/관계형은 음 이름 수(12)와
-  // 옥타브 수로 칸 수가 자동으로 정해져서 슬라이더가 필요 없다.
+  // 격자형(주파수)·방사형·직선형·채색 악보만 "해상도"를 직접 고른다. 음계형/사이클/관계형은
+  // 음 이름 수(12)와 옥타브 수로 칸 수가 자동으로 정해져서 슬라이더가 필요 없다.
   const RESOLUTION_CONFIG = {
     sweep: { min: 10, max: 1000, default: 32, label: "격자 한 변 칸 수 (칸 수 = 값²)" },
     radial: { min: 24, max: 360, default: 180, label: "분할 수 (부드러움)" },
     linear: { min: 8, max: 200, default: 48, label: "막대 수" },
+    score: { min: 4, max: 40, default: 14, label: "줄 수 (전체 곡을 몇 줄로 접을지)" },
   };
+  // 채색 악보: 한 줄 = SCORE_COLS개 시간 구간, 구간마다 SCORE_FREQ_BINS개 주파수를 위아래로 쌓는다
+  const SCORE_COLS = 140, SCORE_FREQ_BINS = 30;
 
-  const state = { bands: [], raw: new Float32Array(0), smoothed: new Float32Array(0), frame: 0 };
+  const state = {
+    bands: [], raw: new Float32Array(0), smoothed: new Float32Array(0), frame: 0,
+    staticMode: false, score: null, scoreGen: 0,
+  };
 
   function clampNum(v, lo, hi, dflt) {
     v = parseFloat(v);
     if (!isFinite(v)) return dflt;
     return Math.min(hi, Math.max(lo, v));
+  }
+
+  function fmtTime(t) {
+    if (!isFinite(t)) return "0:00";
+    const m = Math.floor(t / 60), sec = Math.floor(t % 60);
+    return `${m}:${String(sec).padStart(2, "0")}`;
   }
 
   function readSettings() {
@@ -51,6 +63,52 @@
       lightMax: clampNum(ui.lightMax.value, 50, 2000, 790),
       scale: ui.scaleSelect.value,
     };
+  }
+
+  // 불러온 곡 전체를 한 번 분석해서 "접은 스펙트로그램" 하나로 고정 렌더링한다(음악을 하나의
+  // 고정된 색면으로). 왼쪽 위부터 오른쪽으로 시간이 흐르고, 한 줄이 끝나면 다음 줄로 넘어간다.
+  // 줄 안에서는 주파수가 아래(저음)->위(고음)로 쌓인다.
+  async function rebuildScore(s, rowsFold) {
+    const myGen = ++state.scoreGen;
+    state.staticMode = true;
+
+    if (!engine.buffer) {
+      state.bands = [];
+      visualizer.clear();
+      ui.modeInfo.textContent = "먼저 음악 파일을 올리거나 샘플을 재생해보세요.";
+      return;
+    }
+
+    ui.modeInfo.textContent = "전체 곡 분석 중...";
+    const freqBands = ColorModel.buildFrequencyStrip({ ...s, count: SCORE_FREQ_BINS }).bands;
+    const cols = SCORE_COLS;
+    const totalSlices = cols * rowsFold;
+    const harmonicSuppress = clampNum(ui.harmonicSuppress.value, 0, 1, 0.7);
+
+    const sliceLevels = await engine.analyzeBuffer(freqBands, { totalSlices, harmonicSuppress });
+    if (myGen !== state.scoreGen) return; // 그 사이 설정이 또 바뀜 — 낡은 결과는 버린다
+
+    const F = freqBands.length;
+    const gridRows = rowsFold * F;
+    const bands = new Array(cols * gridRows);
+    const levels = new Float32Array(cols * gridRows);
+    for (let foldRow = 0; foldRow < rowsFold; foldRow++) {
+      for (let t = 0; t < cols; t++) {
+        const sliceLevel = sliceLevels[foldRow * cols + t];
+        for (let f = 0; f < F; f++) {
+          const imageRow = foldRow * F + (F - 1 - f); // 높은 주파수가 위로
+          const idx = imageRow * cols + t;
+          bands[idx] = { row: imageRow, col: t, color: freqBands[f].color };
+          levels[idx] = sliceLevel[f];
+        }
+      }
+    }
+
+    state.bands = bands;
+    state.smoothed = levels;
+    state.score = { cols, rowsFold, freqBins: F, hopSeconds: engine.buffer.duration / totalSlices, totalSlices };
+    visualizer.setLayout({ kind: "grid", cols, rows: gridRows });
+    ui.modeInfo.textContent = `${rowsFold}줄 x ${cols}칸 (전체 ${totalSlices.toLocaleString()}구간, 곡 길이 ${fmtTime(engine.buffer.duration)}) 분석 완료`;
   }
 
   function rebuildBands() {
@@ -74,6 +132,17 @@
     const resolution = Math.round(
       clampNum(ui.resolution.value, resConfig ? resConfig.min : 1, resConfig ? resConfig.max : 1000, resConfig ? resConfig.default : 32)
     );
+
+    if (mode === "score") {
+      state.scoreGen++; // 아직 안 끝난 이전 분석은 이제 낡은 것으로 취급
+      ui.resolutionVal.textContent = `${resolution}줄`;
+      ui.gridWarning.style.display = "none";
+      ui.modeInfo.style.display = "block";
+      rebuildScore(s, resolution); // 비동기 — 끝나면 알아서 state.bands/smoothed를 채운다
+      return;
+    }
+    state.staticMode = false;
+    state.score = null;
 
     let bands, cols, rows, kind, infoText = "";
     if (mode === "chroma") {
@@ -119,14 +188,28 @@
     }
   }
 
-  function fmtTime(t) {
-    if (!isFinite(t)) return "0:00";
-    const m = Math.floor(t / 60), sec = Math.floor(t % 60);
-    return `${m}:${String(sec).padStart(2, "0")}`;
-  }
-
   function loop() {
     requestAnimationFrame(loop);
+
+    if (state.staticMode) {
+      const minBrightness = clampNum(ui.minBrightness.value, 0, 0.5, 0.08);
+      if (state.bands.length) {
+        visualizer.render(state.smoothed, state.bands, minBrightness);
+        if (state.score && engine.playing) {
+          const t = Math.min(engine.currentTime, engine.duration - 1e-4);
+          const sliceIndex = Math.min(state.score.totalSlices - 1, Math.floor(t / state.score.hopSeconds));
+          const foldRow = Math.floor(sliceIndex / state.score.cols);
+          const col = sliceIndex % state.score.cols;
+          visualizer.markPlayhead(col, foldRow * state.score.freqBins, state.score.freqBins);
+        }
+      }
+      if (engine.buffer) {
+        ui.timeDisplay.textContent = `${fmtTime(engine.currentTime)} / ${fmtTime(engine.duration)}`;
+        if (!engine.playing && engine.offset === 0 && ui.playBtn.textContent !== "재생") ui.playBtn.textContent = "재생";
+      }
+      return;
+    }
+
     const n = state.bands.length;
     if (!n) return;
     const skip = n > 600000 ? 3 : n > 250000 ? 2 : 1;
@@ -155,7 +238,18 @@
   ["visualMode", "soundMin", "soundMax", "lightMin", "lightMax", "scaleSelect", "resolution"].forEach((id) => {
     ui[id].addEventListener("change", rebuildBands);
   });
-  ui.resolution.addEventListener("input", rebuildBands);
+  ui.resolution.addEventListener("input", () => {
+    // 채색 악보는 "줄 수"를 바꿀 때마다 곡 전체를 다시 분석해야 해서 무겁다 — 드래그 중엔
+    // 라벨만 갱신하고, 실제 재분석은 손을 뗄 때(change)만 한다.
+    if (ui.visualMode.value === "score") {
+      ui.resolutionVal.textContent = `${ui.resolution.value}줄 (손을 떼면 다시 분석)`;
+      return;
+    }
+    rebuildBands();
+  });
+  ui.harmonicSuppress.addEventListener("change", () => {
+    if (ui.visualMode.value === "score") rebuildBands();
+  });
 
   ui.pixelated.addEventListener("change", () => visualizer.setPixelated(ui.pixelated.checked));
 
@@ -169,6 +263,7 @@
       ui.status.textContent = `${file.name}`;
       ui.playBtn.disabled = false;
       ui.playBtn.textContent = "재생";
+      rebuildBands(); // 채색 악보 모드라면 새로 불러온 곡으로 다시 분석
     } catch (err) {
       ui.status.textContent = "오디오 디코딩 실패: " + err.message;
     }
@@ -185,6 +280,7 @@
         await engine.loadArrayBuffer(arrayBuffer);
         ui.status.textContent = `샘플: ${btn.dataset.name}`;
         ui.playBtn.disabled = false;
+        rebuildBands(); // 채색 악보 모드라면 새로 불러온 곡으로 다시 분석
         engine.play();
         ui.playBtn.textContent = "일시정지";
       } catch (err) {

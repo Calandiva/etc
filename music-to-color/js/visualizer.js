@@ -40,6 +40,8 @@
 
     setPixelated(v) { this.pixelated = v; }
 
+    clear() { this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height); }
+
     layout() {
       const dpr = window.devicePixelRatio || 1;
       const w = this.container.clientWidth, h = this.container.clientHeight;
@@ -66,6 +68,16 @@
       else if (this.kind === "cycle") this._renderRing(levels, bands, minBrightness, false);
       else if (this.kind === "relational") this._renderRing(levels, bands, minBrightness, true);
       else if (this.kind === "linear") this._renderLinear(levels, bands, minBrightness);
+    }
+
+    // "채색 악보"처럼 고정 이미지를 그려놓은 격자 위에, 지금 재생 위치에 해당하는 한 칸(줄 전체
+    // 두께)을 가볍게 덧그린다 — render()가 매번 다시 그리는 큰 이미지는 그대로 두고 테두리만.
+    markPlayhead(col, rowStart, rowSpan) {
+      if (this.kind !== "grid" || !this.cols || !this.rows) return;
+      const sx = this.canvas.width / this.cols, sy = this.canvas.height / this.rows;
+      this.ctx.strokeStyle = "rgba(255,255,255,0.9)";
+      this.ctx.lineWidth = Math.max(1, sx * 0.18);
+      this.ctx.strokeRect(col * sx + this.ctx.lineWidth / 2, rowStart * sy + this.ctx.lineWidth / 2, sx - this.ctx.lineWidth, rowSpan * sy - this.ctx.lineWidth);
     }
 
     // 격자형: cols x rows 픽셀짜리 오프스크린에 채운 뒤 화면 캔버스로 확대(최대 1,000,000칸도 가볍다)
