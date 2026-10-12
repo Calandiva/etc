@@ -1,5 +1,5 @@
 /* 시각화 렌더러 — 격자형(음계/주파수)은 작은 오프스크린 캔버스에 ImageData 를 채워 확대
-   그리고, 방사형·사이클·관계형·직선형은 화면 캔버스에 직접 도형을 그린다. 다섯 가지 모두
+   그리고, 방사형·사이클·관계형·직선형·채색 악보는 화면 캔버스에 직접 도형을 그린다. 전부
    render(levels, bands, minBrightness) 하나로 호출하고, 어떤 모양으로 그릴지는 setLayout()
    에서 받은 kind 가 정한다. */
 (function (g) {
@@ -25,7 +25,7 @@
       document.addEventListener("fullscreenchange", () => this.layout());
     }
 
-    // layout: { kind: 'grid'|'radial'|'cycle'|'relational'|'linear', cols?, rows? }
+    // layout: { kind: 'grid'|'radial'|'cycle'|'relational'|'linear'|'score', cols?, rows? }
     setLayout({ kind, cols, rows }) {
       this.kind = kind;
       if (kind === "grid") {
@@ -34,6 +34,9 @@
         this.offscreen.width = cols;
         this.offscreen.height = rows;
         this.imageData = this.offCtx.createImageData(cols, rows);
+      } else if (kind === "score") {
+        this.cols = cols; // 채색 악보는 벡터로 직접 그려서 오프스크린 버퍼가 필요 없다
+        this.rows = rows;
       }
       this.layout();
     }
@@ -51,10 +54,11 @@
         const aspect = this.cols / this.rows;
         cssH = w / aspect;
         if (cssH > h) { cssH = h; cssW = h * aspect; }
-      } else if (this.kind !== "linear") {
+      } else if (this.kind !== "linear" && this.kind !== "score") {
         const side = Math.min(w, h);
         cssW = side; cssH = side;
       }
+      // 'linear'·'score'는 컨테이너를 그대로 꽉 채운다(score는 각 줄에 충분한 두께를 주기 위해)
       this.canvas.style.width = cssW + "px";
       this.canvas.style.height = cssH + "px";
       this.canvas.width = Math.round(cssW * dpr);
@@ -62,18 +66,20 @@
     }
 
     render(levels, bands, minBrightness) {
-      if (!bands || !bands.length) return;
+      if (!bands) return;
+      if (this.kind !== "score" && !bands.length) return; // score는 점이 0개여도(무음 구간) 지워야 한다
       if (this.kind === "grid") this._renderGrid(levels, bands, minBrightness);
       else if (this.kind === "radial") this._renderRadial(levels, bands, minBrightness);
       else if (this.kind === "cycle") this._renderRing(levels, bands, minBrightness, false);
       else if (this.kind === "relational") this._renderRing(levels, bands, minBrightness, true);
       else if (this.kind === "linear") this._renderLinear(levels, bands, minBrightness);
+      else if (this.kind === "score") this._renderScore(levels, bands, minBrightness);
     }
 
-    // "채색 악보"처럼 고정 이미지를 그려놓은 격자 위에, 지금 재생 위치에 해당하는 한 칸(줄 전체
-    // 두께)을 가볍게 덧그린다 — render()가 매번 다시 그리는 큰 이미지는 그대로 두고 테두리만.
+    // "채색 악보"처럼 고정 이미지를 그려놓은 위에, 지금 재생 위치에 해당하는 한 줄의 한 칸을
+    // 가볍게 덧그린다 — render()가 매번 다시 그리는 큰 이미지는 그대로 두고 테두리만.
     markPlayhead(col, rowStart, rowSpan) {
-      if (this.kind !== "grid" || !this.cols || !this.rows) return;
+      if ((this.kind !== "grid" && this.kind !== "score") || !this.cols || !this.rows) return;
       const sx = this.canvas.width / this.cols, sy = this.canvas.height / this.rows;
       this.ctx.strokeStyle = "rgba(255,255,255,0.9)";
       this.ctx.lineWidth = Math.max(1, sx * 0.18);
@@ -182,6 +188,30 @@
         const lx = cx + labelR * Math.cos(p.angle), ly = cy + labelR * Math.sin(p.angle);
         this.ctx.fillStyle = "rgba(230,230,239,0.85)";
         this.ctx.fillText(b.label.replace(/[0-9]/g, ""), lx, ly);
+      }
+    }
+
+    // 채색 악보: 줄(this.rows) x 칸(this.cols)의 접힌 시간축 위에, 각 시간 칸에서 실제로 울리던
+    // 기음들을 섞은 색 점 하나씩만 찍는다 — 배음·침묵 구간은 그리지 않아서 전체적으로 땡땡이
+    // 무늬가 된다. 점의 세로 위치(band.t, 0~1)는 그 칸의 혼합 음높이가 곡 전체 기음 범위에서
+    // 어디쯌인지, 점의 크기·밝기는 levels[i](세기)가 정한다.
+    _renderScore(levels, bands, minBrightness) {
+      const w = this.canvas.width, h = this.canvas.height;
+      this.ctx.clearRect(0, 0, w, h);
+      if (!bands.length || !this.cols || !this.rows) return;
+      const colW = w / this.cols, rowH = h / this.rows;
+      const maxRadius = Math.min(colW, rowH) * 0.42, minRadius = maxRadius * 0.22;
+      for (let i = 0; i < bands.length; i++) {
+        const b = bands[i];
+        const confidence = Math.max(0, Math.min(1, levels[i]));
+        const brightness = minBrightness + (1 - minBrightness) * Math.sqrt(confidence);
+        const radius = minRadius + confidence * (maxRadius - minRadius);
+        const cx = (b.col + 0.5) * colW;
+        const cy = (b.row + (1 - b.t)) * rowH; // t=1(고음) 쪽이 줄 위쪽
+        this.ctx.fillStyle = rgbCss(b.color, brightness);
+        this.ctx.beginPath();
+        this.ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        this.ctx.fill();
       }
     }
 

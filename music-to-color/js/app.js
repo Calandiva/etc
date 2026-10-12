@@ -34,8 +34,8 @@
     linear: { min: 8, max: 200, default: 48, label: "막대 수" },
     score: { min: 4, max: 40, default: 14, label: "줄 수 (전체 곡을 몇 줄로 접을지)" },
   };
-  // 채색 악보: 한 줄 = SCORE_COLS개 시간 구간, 구간마다 SCORE_FREQ_BINS개 주파수를 위아래로 쌓는다
-  const SCORE_COLS = 140, SCORE_FREQ_BINS = 30;
+  // 채색 악보: 한 줄 = SCORE_COLS개 시간 구간. 구간마다 그 순간의 기음(들)을 섞은 색 점 하나.
+  const SCORE_COLS = 140;
 
   const state = {
     bands: [], raw: new Float32Array(0), smoothed: new Float32Array(0), frame: 0,
@@ -65,9 +65,29 @@
     };
   }
 
-  // 불러온 곡 전체를 한 번 분석해서 "접은 스펙트로그램" 하나로 고정 렌더링한다(음악을 하나의
-  // 고정된 색면으로). 왼쪽 위부터 오른쪽으로 시간이 흐르고, 한 줄이 끝나면 다음 줄로 넘어간다.
-  // 줄 안에서는 주파수가 아래(저음)->위(고음)로 쌓인다.
+  // 여러 기음이 동시에 울리면 레벨(세기)로 가중 평균해 색 하나·음높이 하나로 섞는다.
+  // 반환: { color:[r,g,b], t(0~1, 곡 전체 기음범위 안에서 이 음높이의 위치), confidence(0~1) }
+  function blendFundamentals(fundamentals, rangeMin, rangeMax, lightMin, lightMax, scale) {
+    if (!fundamentals.length) return null;
+    let sumW = 0, sumLogF = 0, r = 0, g = 0, b = 0;
+    for (const f of fundamentals) {
+      const w = f.level;
+      if (w <= 0) continue;
+      sumW += w;
+      sumLogF += Math.log2(f.freqHz) * w;
+      const { color } = ColorModel.colorFor(f.freqHz, rangeMin, rangeMax, lightMin, lightMax, scale);
+      r += color[0] * w; g += color[1] * w; b += color[2] * w;
+    }
+    if (sumW <= 0) return null;
+    const avgFreq = Math.pow(2, sumLogF / sumW);
+    const t = ColorModel.normalizeT(avgFreq, rangeMin, rangeMax, scale);
+    return { color: [r / sumW, g / sumW, b / sumW], t, confidence: Math.min(1, sumW) };
+  }
+
+  // 불러온 곡 전체를 한 번 분석해서 "접은 시간축" 하나로 고정 렌더링한다(음악을 하나의 고정된
+  // 색면으로). 왼쪽 위부터 오른쪽으로 시간이 흐르고, 한 줄이 끝나면 다음 줄로 넘어간다. 매 순간
+  // 실제로 울리던 기음(들)만 색을 섞어 점 하나로 찍는다(배음·침묵은 그리지 않아 땡땡이 무늬가
+  // 된다). 점의 세로 위치는 그 음높이가 곡 전체에서 감지된 기음 범위 안 어디인지로 정한다.
   async function rebuildScore(s, rowsFold) {
     const myGen = ++state.scoreGen;
     state.staticMode = true;
@@ -79,36 +99,41 @@
       return;
     }
 
-    ui.modeInfo.textContent = "전체 곡 분석 중...";
-    const freqBands = ColorModel.buildFrequencyStrip({ ...s, count: SCORE_FREQ_BINS }).bands;
+    ui.modeInfo.textContent = "전체 곡 분석 중... (가장 낮은/높은 기음을 찾는 중)";
     const cols = SCORE_COLS;
     const totalSlices = cols * rowsFold;
-    const harmonicSuppress = clampNum(ui.harmonicSuppress.value, 0, 1, 0.7);
 
-    const sliceLevels = await engine.analyzeBuffer(freqBands, { totalSlices, harmonicSuppress });
+    const { slices, minFreq, maxFreq } = await engine.analyzeFundamentalsOverBuffer(totalSlices);
     if (myGen !== state.scoreGen) return; // 그 사이 설정이 또 바뀜 — 낡은 결과는 버린다
 
-    const F = freqBands.length;
-    const gridRows = rowsFold * F;
-    const bands = new Array(cols * gridRows);
-    const levels = new Float32Array(cols * gridRows);
+    let rangeMin = minFreq, rangeMax = maxFreq, rangeNote = "";
+    if (rangeMin === null) {
+      rangeMin = s.soundMin; rangeMax = s.soundMax;
+      rangeNote = " (감지된 기음 없음 — 설정값 범위 사용)";
+    } else if (rangeMin >= rangeMax) {
+      rangeMax = rangeMin * 1.05; // 기음이 전부 같은 주파수뿐이면 0으로 나누기 방지
+    }
+
+    const bands = [];
+    const levels = [];
     for (let foldRow = 0; foldRow < rowsFold; foldRow++) {
-      for (let t = 0; t < cols; t++) {
-        const sliceLevel = sliceLevels[foldRow * cols + t];
-        for (let f = 0; f < F; f++) {
-          const imageRow = foldRow * F + (F - 1 - f); // 높은 주파수가 위로
-          const idx = imageRow * cols + t;
-          bands[idx] = { row: imageRow, col: t, color: freqBands[f].color };
-          levels[idx] = sliceLevel[f];
-        }
+      for (let col = 0; col < cols; col++) {
+        const blended = blendFundamentals(slices[foldRow * cols + col], rangeMin, rangeMax, s.lightMin, s.lightMax, s.scale);
+        if (!blended) continue; // 이 순간 기음이 없으면 점을 찍지 않는다
+        bands.push({ row: foldRow, col, color: blended.color, t: blended.t });
+        levels.push(blended.confidence);
       }
     }
 
     state.bands = bands;
-    state.smoothed = levels;
-    state.score = { cols, rowsFold, freqBins: F, hopSeconds: engine.buffer.duration / totalSlices, totalSlices };
-    visualizer.setLayout({ kind: "grid", cols, rows: gridRows });
-    ui.modeInfo.textContent = `${rowsFold}줄 x ${cols}칸 (전체 ${totalSlices.toLocaleString()}구간, 곡 길이 ${fmtTime(engine.buffer.duration)}) 분석 완료`;
+    state.smoothed = Float32Array.from(levels);
+    state.score = { cols, rowsFold, hopSeconds: engine.buffer.duration / totalSlices, totalSlices };
+    visualizer.setLayout({ kind: "score", cols, rows: rowsFold });
+
+    const fmtFreq = (f) => `${Math.round(f).toLocaleString()}Hz`;
+    ui.modeInfo.textContent =
+      `감지된 기음 범위: ${fmtFreq(rangeMin)} ~ ${fmtFreq(rangeMax)}${rangeNote} · ` +
+      `${rowsFold}줄 x ${cols}칸, 점 ${bands.length.toLocaleString()}개 (곡 길이 ${fmtTime(engine.buffer.duration)})`;
   }
 
   function rebuildBands() {
@@ -193,15 +218,13 @@
 
     if (state.staticMode) {
       const minBrightness = clampNum(ui.minBrightness.value, 0, 0.5, 0.08);
-      if (state.bands.length) {
-        visualizer.render(state.smoothed, state.bands, minBrightness);
-        if (state.score && engine.playing) {
-          const t = Math.min(engine.currentTime, engine.duration - 1e-4);
-          const sliceIndex = Math.min(state.score.totalSlices - 1, Math.floor(t / state.score.hopSeconds));
-          const foldRow = Math.floor(sliceIndex / state.score.cols);
-          const col = sliceIndex % state.score.cols;
-          visualizer.markPlayhead(col, foldRow * state.score.freqBins, state.score.freqBins);
-        }
+      visualizer.render(state.smoothed, state.bands, minBrightness);
+      if (state.score && engine.playing) {
+        const t = Math.min(engine.currentTime, engine.duration - 1e-4);
+        const sliceIndex = Math.min(state.score.totalSlices - 1, Math.floor(t / state.score.hopSeconds));
+        const foldRow = Math.floor(sliceIndex / state.score.cols);
+        const col = sliceIndex % state.score.cols;
+        visualizer.markPlayhead(col, foldRow, 1);
       }
       if (engine.buffer) {
         ui.timeDisplay.textContent = `${fmtTime(engine.currentTime)} / ${fmtTime(engine.duration)}`;

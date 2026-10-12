@@ -2,58 +2,79 @@
    구해서, 격자 칸 수(최대 1000x1000)가 FFT 해상도보다 훨씬 많아도 빈 칸 없이 매끈하게 채운다.
 
    실제 음원은 기음(기본주파수) 하나에 배음(정수배 倍音)이 줄줄이 따라붙어, 배음들도 꽤 크게
-   잡히는 바람에 모든 대역이 한꺼번에 울렁거리는 문제가 있다. emphasizeFundamentals() 가 매
-   프레임 스펙트럼 피크를 찾아, 가장 강한 피크(기음)는 그대로 두고 그 정수배 주파수에 걸리는
-   약한 피크(배음)는 어둡게 깎아서, 실제로 울리는 음 각각이 또렷한 하나의 밝은 신호로 보이게
-   한다. 이 보정 함수와 밴드 보간 함수는 순수 함수로 분리해서, 실시간 재생 경로와(아래)
-   "채색 악보" 모드가 OfflineAudioContext로 곡 전체를 한 번에 분석하는 경로가 완전히
-   같은 로직을 쓴다. */
+   잡히는 바람에 모든 대역이 한꺼번에 울렁거리는 문제가 있다. findPeaks()+classifyFundamentals()
+   가 매 프레임 스펙트럼 피크를 찾아 기음/배음을 가른다 — 실시간 재생 경로(emphasizeFundamentals,
+   배음을 어둡게 깎음)와 "채색 악보" 모드가 OfflineAudioContext로 곡 전체를 한 번에 분석하는
+   경로(detectFundamentals, 기음 목록만 뽑음)가 완전히 같은 로직을 쓴다. */
 (function (g) {
   const FFT_SIZE = 8192, MIN_DB = -90, MAX_DB = -10;
+  const MIN_PEAK_HZ = 20; // 가청 하한. 이 아래 bin은 윈도우 경계·DC 누설로 생기는 가짜 피크라 버린다
 
-  // 스펙트럼(dB) 에서 피크를 찾아 기음/배음을 분류하고, 배음 피크 주변을 어둡게 깎은 보정
-  // 스펙트럼을 돌려준다. strength 0 = 보정 없음(원본 그대로), 1 = 강하게 깎음.
+  // 스펙트럼(dB)에서 로컬 최대값을 피크로 찾고, 너무 가까운 중복은 제거한다. 세기 내림차순.
+  function findPeaks(freqData, binHz, threshold, minSeparationHz) {
+    const n = freqData.length;
+    const minBin = Math.max(1, Math.ceil(MIN_PEAK_HZ / binHz));
+    const peaks = [];
+    for (let i = Math.max(1, minBin); i < n - 1; i++) {
+      const v = freqData[i];
+      if (v >= threshold && v > freqData[i - 1] && v >= freqData[i + 1]) peaks.push({ i, freq: i * binHz, db: v });
+    }
+    peaks.sort((a, b) => b.db - a.db);
+    const kept = [];
+    for (const p of peaks) {
+      if (kept.every((k) => Math.abs(k.freq - p.freq) >= minSeparationHz)) kept.push(p);
+    }
+    return kept;
+  }
+
+  // 센 피크부터 훑으면서, 이미 인정된 기음의 정수배 주파수(2~16배, 3% 오차)에 걸리면 배음으로,
+  // 아니면 새 기음으로 분류한다. harmonicOf: Map(피크 -> { fundamental, k })
+  function classifyFundamentals(peaks) {
+    const fundamentals = [];
+    const harmonicOf = new Map();
+    for (const p of peaks) {
+      let harmonicOrder = 0, matched = null;
+      for (const f of fundamentals) {
+        const ratio = p.freq / f.freq;
+        const k = Math.round(ratio);
+        if (k >= 2 && k <= 16 && Math.abs(ratio - k) / k <= 0.03) { harmonicOrder = k; matched = f; break; }
+      }
+      if (harmonicOrder > 0) harmonicOf.set(p, { fundamental: matched, k: harmonicOrder });
+      else fundamentals.push(p);
+    }
+    return { fundamentals, harmonicOf };
+  }
+
+  // 배음 피크 주변을 어둡게 깎은 보정 스펙트럼을 돌려준다(격자형 등 실시간 모드가 씀).
+  // strength 0 = 보정 없음(원본 그대로), 1 = 강하게 깎음.
   function emphasizeFundamentals(freqData, sampleRate, fftSize, minDb, maxDb, strength, scratch) {
     const n = freqData.length;
     const adjusted = scratch && scratch.length === n ? scratch : new Float32Array(n);
     adjusted.set(freqData);
     if (strength <= 0) return adjusted;
 
-    const binHz = sampleRate / fftSize;
-    const span = maxDb - minDb;
+    const binHz = sampleRate / fftSize, span = maxDb - minDb;
     const threshold = minDb + 0.12 * span;
-    const minSeparationHz = 20;
+    const peaks = findPeaks(freqData, binHz, threshold, 20);
+    const { harmonicOf } = classifyFundamentals(peaks);
 
-    const peaks = [];
-    for (let i = 1; i < n - 1; i++) {
-      const v = freqData[i];
-      if (v >= threshold && v > freqData[i - 1] && v >= freqData[i + 1]) peaks.push({ i, freq: i * binHz, db: v });
-    }
-    peaks.sort((a, b) => b.db - a.db);
-
-    const kept = [];
-    for (const p of peaks) {
-      if (kept.every((k) => Math.abs(k.freq - p.freq) >= minSeparationHz)) kept.push(p);
-    }
-
-    const fundamentals = [];
     const window = 2; // 배음 피크의 FFT 로브 폭만큼 주변 bin도 같이 깎는다
     const darkenDb = 36 * strength;
-    for (const p of kept) {
-      let harmonicOrder = 0;
-      for (const f of fundamentals) {
-        const ratio = p.freq / f.freq;
-        const k = Math.round(ratio);
-        if (k >= 2 && k <= 16 && Math.abs(ratio - k) / k <= 0.03) { harmonicOrder = k; break; }
-      }
-      if (harmonicOrder > 0) {
-        const reduce = darkenDb * Math.min(1.5, 0.6 + 0.08 * harmonicOrder);
-        for (let j = Math.max(0, p.i - window); j <= Math.min(n - 1, p.i + window); j++) adjusted[j] -= reduce;
-      } else {
-        fundamentals.push(p);
-      }
+    for (const [p, info] of harmonicOf) {
+      const reduce = darkenDb * Math.min(1.5, 0.6 + 0.08 * info.k);
+      for (let j = Math.max(0, p.i - window); j <= Math.min(n - 1, p.i + window); j++) adjusted[j] -= reduce;
     }
     return adjusted;
+  }
+
+  // 이 순간 실제로 울리는 기음들만 뽑는다("채색 악보" 모드가 씀). 배음은 제외.
+  // 반환: [{ freqHz, level(0..1) }, ...] 세기 내림차순.
+  function detectFundamentals(freqData, sampleRate, fftSize, minDb, maxDb) {
+    const binHz = sampleRate / fftSize, span = maxDb - minDb;
+    const threshold = minDb + 0.12 * span;
+    const peaks = findPeaks(freqData, binHz, threshold, 20);
+    const { fundamentals } = classifyFundamentals(peaks);
+    return fundamentals.map((p) => ({ freqHz: p.freq, level: Math.max(0, Math.min(1, (p.db - minDb) / span)) }));
   }
 
   // 보정된 스펙트럼(dB)에서, bands 각각의 고정 주파수 지점을 가장 가까운 두 FFT bin으로
@@ -183,11 +204,11 @@
     }
 
     // "채색 악보" 모드용: 지금 재생 중인 부분과 무관하게, 불러온 곡 전체를 OfflineAudioContext로
-    // totalSlices개 시점에서 스냅샷을 찍어 bands별 레벨을 한 번에 계산한다(곡 하나 = 고정된
-    // 색면 하나). suspend(t)/resume() 쌍으로 렌더링을 그 시점에서 멈추고 analyser로 스펙트럼을
-    // 읽은 뒤 계속 진행하는, OfflineAudioContext의 표준적인 스냅샷 패턴을 쓴다.
-    async analyzeBuffer(bands, { totalSlices, harmonicSuppress = 0.7 } = {}) {
-      if (!this.buffer) return [];
+    // totalSlices개 시점에서 스냅샷을 찍어 각 시점에 실제로 울리는 기음 목록을 뽑는다. 곡 전체에서
+    // 가장 낮은/높은 기음 주파수도 같이 돌려준다. suspend(t)/resume() 쌍으로 렌더링을 그 시점에서
+    // 멈추고 analyser로 스펙트럼을 읽은 뒤 계속 진행하는, OfflineAudioContext의 표준 스냅샷 패턴을 쓴다.
+    async analyzeFundamentalsOverBuffer(totalSlices) {
+      if (!this.buffer) return { slices: [], minFreq: null, maxFreq: null };
       const buffer = this.buffer;
       const sampleRate = buffer.sampleRate;
       const offlineCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(
@@ -205,18 +226,20 @@
 
       const hopSeconds = buffer.duration / totalSlices;
       const scratch = new Float32Array(analyser.frequencyBinCount);
-      const levels = new Array(totalSlices);
-      let adjustedScratch = null;
+      const slices = new Array(totalSlices);
+      let minFreq = Infinity, maxFreq = -Infinity;
 
       const waits = [];
       for (let i = 0; i < totalSlices; i++) {
         const t = Math.min(i * hopSeconds, buffer.duration - 1e-4);
         const wait = offlineCtx.suspend(t).then(() => {
           analyser.getFloatFrequencyData(scratch);
-          adjustedScratch = emphasizeFundamentals(scratch, sampleRate, FFT_SIZE, MIN_DB, MAX_DB, harmonicSuppress, adjustedScratch);
-          const out = new Float32Array(bands.length);
-          interpolateBandLevels(adjustedScratch, bands, sampleRate, FFT_SIZE, MIN_DB, MAX_DB, out);
-          levels[i] = out;
+          const fundamentals = detectFundamentals(scratch, sampleRate, FFT_SIZE, MIN_DB, MAX_DB);
+          slices[i] = fundamentals;
+          for (const f of fundamentals) {
+            if (f.freqHz < minFreq) minFreq = f.freqHz;
+            if (f.freqHz > maxFreq) maxFreq = f.freqHz;
+          }
           return offlineCtx.resume();
         });
         waits.push(wait);
@@ -225,7 +248,7 @@
       source.start(0);
       await offlineCtx.startRendering();
       await Promise.all(waits);
-      return levels;
+      return { slices, minFreq: isFinite(minFreq) ? minFreq : null, maxFreq: isFinite(maxFreq) ? maxFreq : null };
     }
   }
 
